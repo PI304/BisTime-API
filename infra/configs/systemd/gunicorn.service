@@ -12,7 +12,7 @@ Group=ubuntu
 # see http://0pointer.net/blog/dynamic-users-with-systemd.html
 WorkingDirectory=/home/ubuntu/BisTime-API
 EnvironmentFile=/home/ubuntu/BisTime-API/.venv/.env
-ExecStart=/opt/venv/bin/gunicorn \
+ExecStart=/home/ubuntu/BisTime-API/.venv/bin/gunicorn \
         --workers 5 \
         --bind unix:/run/gunicorn.sock \
         --access-logfile /var/log/gunicorn/access.log \
