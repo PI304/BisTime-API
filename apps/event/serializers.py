@@ -2,8 +2,7 @@ from datetime import datetime
 from pytz import timezone
 from rest_framework.relations import PrimaryKeyRelatedField
 
-from apps.team.models import Team
-from config.settings import TIME_ZONE
+from config.settings.base import TIME_ZONE
 
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
