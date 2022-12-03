@@ -37,17 +37,9 @@ SchemaView = get_schema_view(
     public=True,
     permission_classes=([permissions.AllowAny]),
     validators=["flex"],
-    url="http://3.35.9.60/api/"
 )
 
 
-@method_decorator(
-    name="get",
-    decorator=swagger_auto_schema(
-        operation_summary="Hello",
-        operation_description="Instructions for api documentation"
-    )
-)
 @api_view(["GET"])
 def hello_world(request: Request) -> Response:
     return Response("Go to '/swagger' or '/redoc' for api documentation")
