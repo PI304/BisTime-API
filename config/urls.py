@@ -15,9 +15,14 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include, re_path
+from django.utils.decorators import method_decorator
 from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
 from drf_yasg.views import get_schema_view
 from rest_framework import permissions
+from rest_framework.request import Request
+from rest_framework.response import Response
+from rest_framework.decorators import api_view
 
 api_info = openapi.Info(
     title="BisTime - API Doc",
@@ -32,12 +37,28 @@ SchemaView = get_schema_view(
     public=True,
     permission_classes=([permissions.AllowAny]),
     validators=["flex"],
+    url="http://3.35.9.60/api/"
 )
 
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_summary="Hello",
+        operation_description="Instructions for api documentation"
+    )
+)
+@api_view(["GET"])
+def hello_world(request: Request) -> Response:
+    return Response("Go to '/swagger' or '/redoc' for api documentation")
+
+
 urlpatterns = [
-    path("", include("config.api_urls")),
+    path("", hello_world),
     path("admin/", admin.site.urls),
-    path("api/", include("config.api_urls")),
+    path("event/", include("apps.event.urls")),
+    path("team/", include("apps.team.urls")),
+    path("security-question/", include("apps.security_question.urls")),
     path("api-auth/", include("rest_framework.urls")),
 ]
 
