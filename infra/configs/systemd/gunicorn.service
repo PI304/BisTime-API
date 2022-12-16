@@ -1,0 +1,28 @@
+[Unit]
+Description=gunicorn daemon
+Requires=gunicorn.socket
+After=network.target
+
+[Service]
+Type=notify
+User=ubuntu
+Group=ubuntu
+# another option for an even more restricted service is
+# DynamicUser=yes
+# see http://0pointer.net/blog/dynamic-users-with-systemd.html
+WorkingDirectory=/home/ubuntu/BisTime-API
+EnvironmentFile=/home/ubuntu/BisTime-API/.venv/.env
+ExecStart=/home/ubuntu/BisTime-API/.venv/bin/gunicorn \
+        --workers 5 \
+        --bind unix:/home/ubuntu/BisTime-API/gunicorn.sock \
+        --access-logfile /var/log/gunicorn/access.log \
+        --access-logformat '{"remote_ip":"%(h)s","request_id":"%({X-Request-Id}i)s","response_code":"%(s)s","request_method":"%(m)s","request_path":"%(U)s","request_querystring":"%(q)s","request_timetaken":"%(M)sms","response_length":"%(B)s"}' \
+        --error-logfile /var/log/gunicorn/error.log \
+        config.wsgi.deploy:application
+ExecReload=/bin/kill -s HUP $MAINPID
+KillMode=mixed
+TimeoutStopSec=5
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
