@@ -19,7 +19,7 @@ from corsheaders.defaults import default_headers
 load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent.parent
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 # For apps directory
 PROJECT_ROOT = os.path.dirname(__file__)
@@ -32,10 +32,10 @@ sys.path.insert(0, os.path.join(PROJECT_ROOT, "apps"))
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY")
 
-# SECURITY WARNING: don't run with debug.py turned on in production!
+# SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = [".ap-northeast-2.compute.amazonaws.com"]
+ALLOWED_HOSTS = []
 
 
 # Application definition
@@ -110,11 +110,11 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = "config.wsgi.debug.application"
+WSGI_APPLICATION = "config.wsgi.application"
 
 # Django REST Framework configurations
 REST_FRAMEWORK = {
-    "EXCEPTION_HANDLER": "config.exceptions.custom_exception_handler",
+    # "EXCEPTION_HANDLER": "config.exceptions.custom_exception_handler",
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.AllowAny",
     ],
@@ -123,8 +123,9 @@ REST_FRAMEWORK = {
         "rest_framework.authentication.SessionAuthentication",
     ),
     "DEFAULT_RENDERER_CLASSES": [
-        "config.renderer.CustomRenderer",
+        # "config.renderer.CustomRenderer",
         "djangorestframework_camel_case.render.CamelCaseJSONRenderer",
+        "rest_framework.renderers.BrowsableAPIRenderer",
     ],
     "DEFAULT_PARSER_CLASSES": [
         "djangorestframework_camel_case.parser.CamelCaseJSONParser",
