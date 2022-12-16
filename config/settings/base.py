@@ -67,6 +67,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "config.request_middleware.RequestMiddleware"
 ]
 
 ROOT_URLCONF = "config.urls"
@@ -91,7 +92,7 @@ WSGI_APPLICATION = "config.wsgi.debug.application"
 
 # Django REST Framework configurations
 REST_FRAMEWORK = {
-    # "EXCEPTION_HANDLER": "config.exceptions.custom_exception_handler",
+    "EXCEPTION_HANDLER": "config.exceptions.custom_exception_handler",
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.AllowAny",
     ],
@@ -100,7 +101,7 @@ REST_FRAMEWORK = {
         "rest_framework.authentication.SessionAuthentication",
     ),
     "DEFAULT_RENDERER_CLASSES": [
-        # "config.renderer.CustomRenderer",
+        "config.renderer.CustomRenderer",
         "djangorestframework_camel_case.render.CamelCaseJSONRenderer",
     ],
     "DEFAULT_PARSER_CLASSES": [
