@@ -37,26 +37,27 @@ SchemaView = get_schema_view(
     public=True,
     permission_classes=([permissions.AllowAny]),
     validators=["flex"],
+    urlconf="config.urls_v1",
 )
 
 
 @api_view(["GET"])
 def hello_world(request: Request) -> Response:
-    return Response("Go to '/swagger' or '/redoc' for api documentation")
+    return Response("Go to '/api/swagger' or '/api/redoc' for api documentation")
 
 
 urlpatterns = [
     path("", hello_world),
     path("admin/", admin.site.urls),
-    path("event/", include("apps.event.urls")),
-    path("team/", include("apps.team.urls")),
-    path("security-question/", include("apps.security_question.urls")),
+    path("events/", include("apps.event.urls")),
+    path("teams/", include("apps.team.urls")),
+    path("security-questions/", include("apps.security_question.urls")),
     path("api-auth/", include("rest_framework.urls")),
 ]
 
 urlpatterns += [
     re_path(
-        r"^swagger(?P<format>\.json|\.yaml)/v1$",
+        r"^swagger(?P<format>\.json|\.yaml)/$",
         SchemaView.without_ui(cache_timeout=0),
         name="schema-json",
     ),
