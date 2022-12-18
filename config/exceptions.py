@@ -10,6 +10,24 @@ class InstanceNotFound(APIException):
     default_detail = "Not Found"
     default_code = "not_found"
 
+    def __init__(self, detail=None):
+        if detail is None:
+            self.detail = self.default_detail
+        else:
+            self.detail = detail
+
+
+class DuplicateInstance(APIException):
+    status_code = 409
+    default_detail = "Instance with provided data already exists"
+    default_code = "duplicate_instance"
+
+    def __init__(self, detail=None):
+        if detail is None:
+            self.detail = self.default_detail
+        else:
+            self.detail = detail
+
 
 def custom_exception_handler(exc, context):
     # Call REST framework's default exception handler first,
@@ -35,6 +53,8 @@ def custom_exception_handler(exc, context):
         elif isinstance(exc, exceptions.NotAuthenticated):
             customized_response = {"code": response.status_code, "detail": exc.detail}
         elif isinstance(exc, InstanceNotFound):
+            customized_response = {"code": response.status_code, "detail": exc.detail}
+        elif isinstance(exc, DuplicateInstance):
             customized_response = {"code": response.status_code, "detail": exc.detail}
         else:
             customized_response = {

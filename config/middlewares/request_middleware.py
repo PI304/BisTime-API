@@ -8,16 +8,16 @@ from config.renderer import CustomRenderer
 class RequestMiddleware:
     def __init__(self, get_response):
         self.get_response = get_response
-        self.VALID_URLS = [
-            "/api", "/swagger", "/redoc"
-        ]
+        self.VALID_URLS = ["api", "swagger", "redoc"]
 
     def __call__(self, request):
 
         try:
             self.process_request(request)
         except ValidationError as e:
-            response = Response({"detail": e.detail}, status=status.HTTP_400_BAD_REQUEST)
+            response = Response(
+                {"detail": e.detail[0]}, status=status.HTTP_400_BAD_REQUEST
+            )
             response.accepted_renderer = CustomRenderer()
             response.accepted_media_type = "application/json"
             response.renderer_context = {}
@@ -29,8 +29,11 @@ class RequestMiddleware:
         return response
 
     def process_request(self, request):
-        if request.headers["Accept"].split(";")[1] == "":
-            raise ValidationError("Accept header must include api version")
-
-        if request.path not in self.VALID_URLS:
-            raise ValidationError({"detail": "all urls must include /api except api document url"})
+        if request.path.split("/")[1] not in ["api", "swagger", "redoc"]:
+            raise ValidationError("all urls must include '/api'")
+        else:
+            if (
+                request.path.split("/")[2] not in ["swagger", "redoc"]
+                and "version" not in request.headers["Accept"].split(";")[1]
+            ):
+                raise ValidationError("Accept header must include api version")

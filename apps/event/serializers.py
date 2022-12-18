@@ -33,45 +33,39 @@ class EventSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
 
+    @staticmethod
+    def time_validation(time_exp: str):
+        if ":" not in time_exp or len(time_exp) != 5 or len(time_exp.split(":")) != 2:
+            raise ValidationError("_time should be of 'HH:MM' format")
+
+        time_split = time_exp.split(":")
+
+        if len(time_split[0]) != 2 or len(time_split[1]) != 2:
+            raise ValidationError("_time should be of 'HH:MM' format")
+
+        if int(time_split[0]) < 0 or int(time_split[0]) > 24:
+            raise ValidationError("hours should be between 00 ~ 24")
+
+        if not (time_split[1] == "30" or time_split[1] == "00"):
+            raise ValidationError("minutes should be 00 or 30")
+
     def validate(self, data: Dict) -> Dict:
         """
         Validate model input
         """
+        if "start_time" in data:
+            self.time_validation(data["start_time"])
 
-        if (
-            (":" not in data["start_time"])
-            or (":" not in data["end_time"])
-            or len(data["start_time"].split(":")) != 2
-            or len(data["end_time"].split(":")) != 2
-        ):
-            raise ValidationError("_time should be of 'HH:MM' format")
+        if "end_time" in data:
+            self.time_validation(data["end_time"])
 
-        start_time_list = data["start_time"].split(":")
-        end_time_list = data["end_time"].split(":")
-
-        if (
-            len(start_time_list[0]) != 2
-            or len(start_time_list[1]) != 2
-            or len(end_time_list[0]) != 2
-            or len(end_time_list[1]) != 2
-        ):
-            raise ValidationError("_time should be of 'HH:MM' format")
-
-        if (
-            int(start_time_list[0]) < 0
-            or int(start_time_list[0]) > 24
-            or int(end_time_list[0]) < 0
-            or int(end_time_list[0]) > 24
-        ):
-            raise ValidationError("hours should be between 00 ~ 24")
-
-        if not (start_time_list[1] == "30" or start_time_list[1] == "00") and (
-            end_time_list[1] == "30" or end_time_list[1] == "00"
-        ):
-            raise ValidationError("minutes should be 00 or 30")
-
-        if int(end_time_list[0]) - int(end_time_list[0]) > 0:
-            raise ValidationError("end_time should be larger than start_time")
+        if "start_time" in data and "end_time" in data:
+            if (
+                int(data["end_time"].split(":")[0])
+                - int(data["start_time"].split(":")[0])
+                < 0
+            ):
+                raise ValidationError("end_time should be larger than start_time")
 
         # TODO: Check if team exists
 
@@ -84,7 +78,7 @@ class EventDateSerializer(serializers.ModelSerializer):
         fields = ["id", "event", "date", "created_at", "updated_at"]
         read_only_fields = [
             "id",
-            "event" "created_at",
+            "created_at",
             "updated_at",
         ]
 
@@ -92,7 +86,7 @@ class EventDateSerializer(serializers.ModelSerializer):
         """
         Check if date is of future value
         """
-        if value >= datetime.now(timezone(TIME_ZONE)):
+        if value <= datetime.now(timezone(TIME_ZONE)).date():
             raise ValidationError("should be a future date")
 
         return value
