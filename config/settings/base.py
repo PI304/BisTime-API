@@ -67,7 +67,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "config.request_middleware.RequestMiddleware"
+    "config.request_middleware.RequestMiddleware",
 ]
 
 ROOT_URLCONF = "config.urls"
@@ -109,9 +109,10 @@ REST_FRAMEWORK = {
     ],
     "DEFAULT_VERSIONING_CLASS": "rest_framework.versioning.AcceptHeaderVersioning",
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
-    "PAGE_SIZE": 2,
+    "PAGE_SIZE": 20,
     "TEST_REQUEST_DEFAULT_FORMAT": "json",
     "DEFAULT_FILTER_BACKENDS": ("django_filters.rest_framework.DjangoFilterBackend",),
+    "DATE_INPUT_FORMATS": ["iso-8601", "%Y-%m-%dT%H:%M:%S.%fZ"],
 }
 
 
@@ -126,9 +127,7 @@ DATABASES = {
         "PASSWORD": os.environ.get("DB_PASSWORD"),
         "HOST": os.environ.get("DB_HOST"),
         "PORT": 3306,
-        "OPTIONS": {
-            "init_command": "SET sql_mode=STRICT_TRANS_TABLES"
-        }
+        "OPTIONS": {"init_command": "SET sql_mode=STRICT_TRANS_TABLES"},
     }
 }
 
@@ -174,10 +173,8 @@ TIME_ZONE = "Asia/Seoul"
 
 STATIC_URL = "static/"
 STATIC_ROOT = os.path.join(BASE_DIR, "static")
-STATICFILES_DIRS = (
-    os.path.join(BASE_DIR, "static"),
-)
-    # Default primary key field type
+STATICFILES_DIRS = (os.path.join(BASE_DIR, "static"),)
+# Default primary key field type
 # https://docs.djangoproject.com/en/4.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
