@@ -17,7 +17,7 @@ from apps.event.serializers import (
     EventDateSerializer,
     ScheduleSerializer,
 )
-from apps.event.services import EventService
+from apps.event.services import EventService, EventDateService
 from config.exceptions import InstanceNotFound
 
 
@@ -148,7 +148,6 @@ class EventDateView(generics.ListCreateAPIView):
 
         for d in additional_dates:
             data = {"date": d, "event": associated_event_id}
-
             serializer = self.get_serializer(data=data)
 
             if serializer.is_valid(raise_exception=True):
@@ -156,15 +155,10 @@ class EventDateView(generics.ListCreateAPIView):
 
             associated_dates.append(serializer.data)
 
-        queryset = self.filter_queryset(self.get_queryset())
+        service = EventDateService(request, self)
+        serialized_dates = service.get_serialized_event_dates()
 
-        page = self.paginate_queryset(queryset)
-        if page is not None:
-            serializer = self.get_serializer(page, many=True)
-            return self.get_paginated_response(serializer.data)
-
-        serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serialized_dates.data, status=status.HTTP_201_CREATED)
 
 
 @method_decorator(

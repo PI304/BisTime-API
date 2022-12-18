@@ -22,3 +22,20 @@ class EventService(object):
         u = uuid.uuid4()
         s = shortuuid.encode(u)
         return s
+
+
+class EventDateService(object):
+    def __init__(self: EventDateService, request: Request, view=None):
+        self.request = request
+        self.view = view
+
+    def get_serialized_event_dates(self):
+        queryset = self.view.filter_queryset(self.view.get_queryset())
+
+        page = self.view.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.view.get_serializer(page, many=True)
+            return self.view.get_paginated_response(serializer.data)
+
+        serializer = self.view.get_serializer(queryset, many=True)
+        return serializer
