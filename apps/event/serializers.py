@@ -78,7 +78,7 @@ class EventDateSerializer(serializers.ModelSerializer):
         fields = ["id", "event", "date", "created_at", "updated_at"]
         read_only_fields = [
             "id",
-            "event" "created_at",
+            "created_at",
             "updated_at",
         ]
 
@@ -86,7 +86,7 @@ class EventDateSerializer(serializers.ModelSerializer):
         """
         Check if date is of future value
         """
-        if value >= datetime.now(timezone(TIME_ZONE)):
+        if value <= datetime.now(timezone(TIME_ZONE)).date():
             raise ValidationError("should be a future date")
 
         return value
