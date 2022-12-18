@@ -41,6 +41,10 @@ class EventDate(TimeStampMixin):
 
     class Meta:
         db_table = "event_date"
+        unique_together = (
+            "event",
+            "date",
+        )
 
     def __str__(self) -> str:
         return f"[{self.id}] ({self.event}, {self.date})"
