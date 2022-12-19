@@ -59,11 +59,16 @@ class Schedule(TimeStampMixin):
     event = models.ForeignKey(
         Event, null=False, on_delete=models.CASCADE, related_name="schedule"
     )
-    date = models.ForeignKey(EventDate, null=False, on_delete=models.DO_NOTHING)
+    date = models.ForeignKey(EventDate, null=False, on_delete=models.CASCADE)
     availability = models.BinaryField(null=True, default=bytes(48))
 
     class Meta:
         db_table = "schedule"
+        unique_together = (
+            "name",
+            "event",
+            "date",
+        )
 
     def __str__(self) -> str:
         return f"[{self.id}] {self.name}"
