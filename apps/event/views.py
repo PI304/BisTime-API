@@ -6,7 +6,7 @@ from django.utils.decorators import method_decorator
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 
-from rest_framework import generics, status
+from rest_framework import generics, status, filters
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.request import Request
@@ -30,7 +30,7 @@ from config.exceptions import InstanceNotFound
 )
 class EventView(generics.ListCreateAPIView):
     serializer_class = EventSerializer
-    queryset = Event.objects.all()
+    queryset = Event.objects.all().order_by("id")
 
     @swagger_auto_schema(
         operation_summary="Create a new instant event",
@@ -109,12 +109,11 @@ class EventUpdateView(generics.UpdateAPIView):
 )
 class EventDateView(generics.ListCreateAPIView):
     serializer_class = EventDateSerializer
-    queryset = EventDate.objects.all()
+    queryset = EventDate.objects.all().order_by("date")
     allowed_methods = ["POST"]
 
     def get_queryset(self):
-        qs = super().get_queryset()
-        qs = qs.filter(event=self.kwargs["pk"])
+        qs = self.queryset.filter(event=self.kwargs.get("pk"))
         return qs
 
     @swagger_auto_schema(
@@ -168,126 +167,44 @@ class EventDateView(generics.ListCreateAPIView):
         responses={200: openapi.Response("Success", ScheduleSerializer)},
     ),
 )
-class ScheduleList(generics.ListCreateAPIView):
-    """
-    Lists all schedules associated with an event and creates a schedule
-    """
-
+class ScheduleView(generics.ListAPIView):
     serializer_class = ScheduleSerializer
-    queryset = Schedule.objects.all()
-
-    @swagger_auto_schema(
-        operation_summary="Add user's schedule to an event by name",
-        responses={201: openapi.Response("Success", ScheduleSerializer)},
-        request_body=openapi.Schema(
-            type=openapi.TYPE_OBJECT,
-            properties={
-                "name": openapi.Schema(type=openapi.TYPE_STRING, description="유저 이름"),
-                "availability": openapi.Schema(
-                    type=openapi.TYPE_ARRAY,
-                    items=openapi.Schema(type=openapi.FORMAT_BINARY),
-                    description="하루를 48등분 (30분 단위) 한 Blob 형태, 이벤트에 추가된 날짜 순서대로 리스트로 전달",
-                ),
-            },
-        ),
-    )
-    def post(self, request: Request, *args: Any, **kwargs: Any) -> Response:
-        event_id: int = kwargs.get("pk")
-
-        try:
-            associated_dates: List[EventDate] = get_list_or_404(
-                EventDate, event_id=event_id
-            )
-        except Http404:
-            raise InstanceNotFound("event with provided id does not exist")
-
-        name: str = request.data.get("name")
-        availability: List[bytes] = request.data.get("availability")
-        schedules: List[Schedule] = []
-
-        for i in range(len(associated_dates)):
-            data = {
-                "name": name,
-                "date_id": associated_dates[i].id,
-                "event_id": event_id,
-                "availability": availability[i],
-            }
-            serializer = self.get_serializer(data)
-            if serializer.is_valid(raise_exception=True):
-                serializer.save()
-            schedules.append(serializer.data)
-
-        return Response(schedules, status=status.HTTP_201_CREATED)
-
-
-class ScheduleDetail(generics.UpdateAPIView):
-    """
-    Updates a member's schedule associated with a certain date
-    """
-
-    serializer_class = ScheduleSerializer
-    queryset = Schedule.objects.all()
-    allowed_methods = ["PATCH", "PUT"]
+    queryset = Schedule.objects.all().order_by("date__date")
+    allowed_methods = ["GET"]
+    filter_backends = [filters.SearchFilter]
+    search_fields = ["name"]
 
     def get_queryset(self):
-        qs = super().get_queryset()
-        name = self.kwargs["name"]
-        event_id = self.kwargs["pk"]
-        qs = qs.filter(name=name, event_id=event_id)
+        qs = self.queryset.filter(event=self.kwargs.get("pk"))
         return qs
 
-    def get_objects(self, **kwargs):
-        print(kwargs)
-        return Schedule.objects.filter(
-            name=self.kwargs["name"], event_id=self.kwargs["pk"]
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_summary="Get user's schedule data associated with a single instant event",
+        responses={200: openapi.Response("Success", ScheduleSerializer)},
+    ),
+)
+class UserScheduleView(
+    generics.ListAPIView, generics.UpdateAPIView, generics.DestroyAPIView
+):
+    serializer_class = ScheduleSerializer
+    queryset = Schedule.objects.all().order_by("date__date")
+    filter_backends = [filters.SearchFilter]
+    search_fields = ["name"]
+    allowed_methods = ["GET", "PATCH", "DELETE"]
+
+    def get_queryset(self):
+        qs = self.queryset.filter(
+            event=self.kwargs.get("pk"), name=self.kwargs.get("name")
         )
+        return qs
 
-    @swagger_auto_schema(
-        operation_summary="Update a member's schedule [as a whole] associated with an event",
-        operation_description="Be sure to include blob list containing all dates",
-        responses={
-            200: openapi.Response("Success", ScheduleSerializer),
-            400: "Validation error",
-        },
-        request_body=openapi.Schema(
-            type=openapi.TYPE_OBJECT,
-            properties={
-                "availability": openapi.Schema(
-                    type=openapi.TYPE_ARRAY,
-                    items=openapi.Schema(type=openapi.FORMAT_BINARY),
-                    description="하루를 48등분 (30분 단위) 한 Blob 형태, 이벤트에 추가된 날짜 순서대로 리스트로 전달",
-                ),
-            },
-        ),
-    )
-    def patch(self, request: Request, *args: Any, **kwargs: Any) -> Response:
-        event_id = kwargs.get("pk")
-        schedules = self.get_objects()
-        availability: List[bytes] = request.data.get("availability")
-
-        try:
-            associated_dates: List[EventDate] = get_list_or_404(
-                EventDate, event_id=event_id
-            )
-        except Http404:
-            raise InstanceNotFound("event with provided id does not exist")
-
-        if len(availability) != len(associated_dates):
-            raise ValidationError(
-                "availability list length does not match event-associated dates"
-            )
-
-        result: List[Schedule] = []
-
-        for i in range(len(availability)):
-            schedules[i].availability = availability[i]
-            schedules[i].updated_at = datetime.now()
-            serializer = self.get_serializer(schedules[i])
-            if serializer.is_valid(raise_exception=True):
-                serializer.save(updated_at=datetime.now())
-            result.append(serializer.data)
-
-            return Response(result, status=status.HTTP_200_OK)
+    def get_objects(self) -> List[Schedule]:
+        return Schedule.objects.filter(
+            event=self.kwargs.get("pk"), name=self.kwargs.get("name")
+        )
 
     @swagger_auto_schema(
         operation_summary="Update a member's schedule by date associated with an event",
@@ -302,11 +219,105 @@ class ScheduleDetail(generics.UpdateAPIView):
                     type=openapi.TYPE_INTEGER, description="수정하고자 하는 날짜"
                 ),
                 "availability": openapi.Schema(
-                    type=openapi.FORMAT_BINARY,
-                    description="하루를 48등분 (30분 단위) 하여 Blob 형태로 전달",
+                    type=openapi.TYPE_ARRAY,
+                    items=openapi.Schema(
+                        type=openapi.FORMAT_BINARY, description="0 혹은 1"
+                    ),
+                    description="하루를 48등분 (30분 단위) 하여 byte array 형태로 전달",
                 ),
             },
         ),
     )
-    def put(self, request: Request, *args: Any, **kwargs: Any) -> Response:
-        pass
+    def patch(self, request: Request, *args: Any, **kwargs: Any) -> Response:
+        instance = self.get_queryset().filter(date=kwargs.get("date")).first()
+        serializer = self.get_serializer(instance, data=request.data, partial=True)
+        if serializer.is_valid(raise_exception=True):
+            serializer.save(updated_at=datetime.now())
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @swagger_auto_schema(
+        operation_summary="Destroys all schedules associated with a name",
+        responses={204: "No content"},
+    )
+    def delete(self, request: Request, *args: Any, **kwargs) -> Response:
+        schedules: List[Schedule] = self.get_objects()
+        for s in schedules:
+            s.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class BulkCreateUserScheduleView(generics.CreateAPIView):
+    serializer_class = ScheduleSerializer
+    queryset = Schedule.objects.all()
+    allowed_methods = ["POST"]
+
+    @swagger_auto_schema(
+        operation_summary="Add user's schedule to an event for all dates",
+        operation_description="overrides existing schedules",
+        responses={201: openapi.Response("Success", ScheduleSerializer)},
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            required=["name", "availability"],
+            properties={
+                "name": openapi.Schema(type=openapi.TYPE_STRING, description="유저 이름"),
+                "availability": openapi.Schema(
+                    type=openapi.TYPE_ARRAY,
+                    items=openapi.Schema(
+                        type=openapi.TYPE_ARRAY,
+                        items=openapi.Schema(
+                            type=openapi.FORMAT_BINARY, description="0 혹은 1"
+                        ),
+                        description="0 혹은 1 로 구성된 length 48 짜리 byte array",
+                    ),
+                    description="이벤트에 추가된 날짜 순서대로 byte array 전달",
+                ),
+            },
+        ),
+    )
+    def post(self, request: Request, *args: Any, **kwargs: Any) -> Response:
+        event_id: int = kwargs.get("pk")
+        name: str = request.data.get("name")
+
+        try:
+            associated_dates: List[EventDate] = get_list_or_404(
+                EventDate, event_id=event_id, name=name
+            )
+        except Http404:
+            raise InstanceNotFound("event with provided id does not exist")
+
+        availability: List[List[bytes]] = request.data.get("availability")
+
+        if len(associated_dates) != len(availability):
+            raise ValidationError(
+                "length of availability does not match associated dates"
+            )
+
+        schedules: List[Schedule] = []
+
+        for i in range(len(associated_dates)):
+            try:
+                instance = get_object_or_404(
+                    Schedule, name=name, date=associated_dates[i].id
+                )
+
+                # instance 있을 때 -> update Instance
+                serializer = self.get_serializer(
+                    instance, data={"availability": availability[i]}, partial=True
+                )
+                if serializer.is_valid(raise_exception=True):
+                    serializer.save(updated_at=datetime.now())
+                schedules.append(serializer.data)
+            except Http404 as e:
+                # instance 없을 때 -> 새로 생성
+                data = {
+                    "event": event_id,
+                    "name": name,
+                    "availability": availability[i],
+                    "date": associated_dates[i].id,
+                }
+                serializer = self.get_serializer(data=data)
+                if serializer.is_valid(raise_exception=True):
+                    serializer.save()
+                schedules.append(serializer.data)
+
+        return Response(schedules, status=status.HTTP_201_CREATED)
