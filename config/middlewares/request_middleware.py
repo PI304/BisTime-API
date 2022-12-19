@@ -33,7 +33,7 @@ class RequestMiddleware:
             raise ValidationError("all urls must include '/api'")
         else:
             if (
-                request.path.split("/")[2] not in ["swagger", "redoc"]
+                request.path.split("/")[2] not in ["swagger", "redoc", "admin"]
                 and "version" not in request.headers["Accept"].split(";")[1]
             ):
                 raise ValidationError("Accept header must include api version")
