@@ -64,10 +64,18 @@ class EventView(generics.ListCreateAPIView):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
-class EventUpdateView(generics.UpdateAPIView):
+@method_decorator(
+    name="delete",
+    decorator=swagger_auto_schema(
+        operation_summary="Delete an event",
+        operation_description="[Warning] Cascading deletion for all related dates and schedules",
+        responses={200: openapi.Response("Success", EventDateSerializer)},
+    ),
+)
+class EventDetailView(generics.UpdateAPIView, generics.DestroyAPIView):
     serializer_class = EventSerializer
     queryset = Event.objects.all()
-    allowed_methods = ["PATCH"]
+    allowed_methods = ["PATCH", "DELETE"]
 
     @swagger_auto_schema(
         operation_summary="Update an instant event",
@@ -158,6 +166,20 @@ class EventDateView(generics.ListCreateAPIView):
         serialized_dates = service.get_serialized_event_dates()
 
         return Response(serialized_dates.data, status=status.HTTP_201_CREATED)
+
+
+@method_decorator(
+    name="delete",
+    decorator=swagger_auto_schema(
+        operation_summary="Delete a date associated with an event",
+        operation_description="[Warning] Cascading deletion for associated schedules",
+        responses={200: openapi.Response("Success", EventDateSerializer)},
+    ),
+)
+class EventDateDestroyView(generics.DestroyAPIView):
+    serializer_class = EventDateSerializer
+    queryset = EventDate.objects.all()
+    allowed_methods = ["DELETE"]
 
 
 @method_decorator(
