@@ -360,7 +360,7 @@ class UserScheduleView(generics.ListAPIView, generics.DestroyAPIView):
     queryset = Schedule.objects.all().order_by("date__date")
     filter_backends = [filters.SearchFilter]
     search_fields = ["name"]
-    allowed_methods = ["GET", "PATCH", "DELETE"]
+    allowed_methods = ["GET", "DELETE"]
 
     def get_queryset(self):
         qs = self.queryset.filter(
