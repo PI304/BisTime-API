@@ -35,19 +35,15 @@ class EventDate(TimeStampMixin):
 
     id = models.BigAutoField(primary_key=True)
     event = models.ForeignKey(
-        Event, null=False, on_delete=models.CASCADE, related_name="event_date"
+        Event, null=False, on_delete=models.CASCADE, related_name="event"
     )
     date = models.DateField(null=False)
 
     class Meta:
         db_table = "event_date"
-        unique_together = (
-            "event",
-            "date",
-        )
 
     def __str__(self) -> str:
-        return f"[{self.id}] ({self.event}, {self.date})"
+        return f"{self.date}"
 
     def __repr__(self) -> str:
         return f"EventDate({self.id}, {self.event}, {self.date})"
@@ -59,11 +55,12 @@ class Schedule(TimeStampMixin):
     event = models.ForeignKey(
         Event, null=False, on_delete=models.CASCADE, related_name="schedule"
     )
-    date = models.ForeignKey(EventDate, null=False, on_delete=models.DO_NOTHING)
-    availability = models.BinaryField(null=True, default=bytes(48))
+    date = models.ForeignKey(EventDate, null=False, on_delete=models.CASCADE)
+    availability = models.BinaryField(null=False, blank=False)
 
     class Meta:
         db_table = "schedule"
+        unique_together = (("name", "event", "date"),)
 
     def __str__(self) -> str:
         return f"[{self.id}] {self.name}"
