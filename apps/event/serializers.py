@@ -73,11 +73,14 @@ class EventSerializer(serializers.ModelSerializer):
 
 
 class EventDateSerializer(serializers.ModelSerializer):
+    event = EventSerializer(read_only=True)
+
     class Meta:
         model = EventDate
         fields = ["id", "event", "date", "created_at", "updated_at"]
         read_only_fields = [
             "id",
+            "event",
             "created_at",
             "updated_at",
         ]
@@ -92,9 +95,23 @@ class EventDateSerializer(serializers.ModelSerializer):
         return value
 
 
+class ByteArrayField(serializers.Field):
+    def to_representation(self, value: bytearray) -> list:
+        return list(value)
+
+    def to_internal_value(self, data):
+        if not isinstance(data, bytearray):
+            msg = "Incorrect type. Expected a bytearray, but got %s"
+            raise ValidationError(msg % type(data).__name__)
+        if len(list(data)) != 48:
+            raise ValidationError("length of availability array should be 48")
+        return data
+
+
 class ScheduleSerializer(serializers.ModelSerializer):
-    event = PrimaryKeyRelatedField(queryset=Event.objects.all())
-    date = PrimaryKeyRelatedField(queryset=EventDate.objects.all())
+    event = EventSerializer(read_only=True)
+    date = serializers.StringRelatedField()
+    availability = ByteArrayField()
 
     class Meta:
         model = Schedule
@@ -109,14 +126,14 @@ class ScheduleSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = [
             "id",
-            "name",
             "event",
+            "date",
             "created_at",
             "updated_at",
         ]
 
-    def validate_availability(self, value: bytes) -> bytes:
-        if len(value) != 48:
-            raise ValidationError("availability must be 48 length bytes")
-
-        return value
+    # def validate_availability(self, value: bytes) -> bytes:
+    #     if len(value) != 48:
+    #         raise ValidationError("availability must be 48 length array")
+    #
+    #     return value
