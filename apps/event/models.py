@@ -41,12 +41,6 @@ class EventDate(TimeStampMixin):
 
     class Meta:
         db_table = "event_date"
-        unique_together = [
-            [
-                "event",
-                "date",
-            ]
-        ]
 
     def __str__(self) -> str:
         return f"{self.date}"
@@ -66,7 +60,7 @@ class Schedule(TimeStampMixin):
 
     class Meta:
         db_table = "schedule"
-        unique_together = [["name", "event", "date"]]
+        unique_together = (("name", "event", "date"),)
 
     def __str__(self) -> str:
         return f"[{self.id}] {self.name}"
