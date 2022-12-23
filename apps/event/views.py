@@ -129,11 +129,13 @@ class EventRetrieveView(generics.RetrieveAPIView):
 )
 class EventDateView(generics.ListCreateAPIView):
     serializer_class = EventDateSerializer
-    queryset = EventDate.objects.all().order_by("event__id", "date")
+    queryset = EventDate.objects.all()
     allowed_methods = ["POST"]
 
     def get_queryset(self):
-        qs = self.queryset.filter(event_id=self.kwargs.get("pk"))
+        qs = self.queryset.filter(event_id=self.kwargs.get("pk")).order_by(
+            "event__id", "date"
+        )
         return qs
 
     @swagger_auto_schema(
@@ -168,9 +170,7 @@ class EventDateView(generics.ListCreateAPIView):
                 existing_date = get_object_or_404(
                     EventDate, event_id=associated_event_id, date=d
                 )
-                raise DuplicateInstance(
-                    "Date entry with the provided date already exists"
-                )
+                continue
             except Http404:
                 data = {"date": d}
                 serializer = self.get_serializer(data=data)
@@ -216,7 +216,6 @@ class ScheduleView(generics.ListCreateAPIView, generics.UpdateAPIView):
 
     def get_queryset(self):
         qs = self.queryset.filter(event_id=self.kwargs.get("pk"))
-        print(qs)
         return qs
 
     @swagger_auto_schema(
@@ -246,14 +245,14 @@ class ScheduleView(generics.ListCreateAPIView, generics.UpdateAPIView):
         event_id: int = kwargs.get("pk")
         name: str = request.data.get("name")
 
-        associated_event = get_object_or_404(Event, id=event_id)
+        associated_event: Event = EventService.get_event_by_id(event_id)
 
         try:
             associated_dates: List[EventDate] = get_list_or_404(
                 EventDate.objects.filter(event_id=event_id).order_by("date")
             )
         except Http404:
-            raise InstanceNotFound("event with provided id does not exist")
+            raise InstanceNotFound("event has no associated dates to add schedule to")
 
         availability: list[list[int]] = request.data.get("availability")
 
@@ -267,7 +266,7 @@ class ScheduleView(generics.ListCreateAPIView, generics.UpdateAPIView):
         for i in range(len(associated_dates)):
             try:
                 instance = get_object_or_404(
-                    Schedule, name=name, date=associated_dates[i].id
+                    Schedule, name=name, date=associated_dates[i].id, event_id=event_id
                 )
 
                 # instance 있을 때 -> update Instance
@@ -326,7 +325,7 @@ class ScheduleView(generics.ListCreateAPIView, generics.UpdateAPIView):
         date_id: int = request.data.get("date")
         availability_arr = request.data["availability"]
 
-        associated_event = get_object_or_404(Event, id=kwargs.get("pk"))
+        associated_event = EventService.get_event_by_id(kwargs.get("pk"))
 
         try:
             existing_date = get_object_or_404(EventDate, event_id=event_id, id=date_id)
