@@ -108,6 +108,18 @@ class EventDetailView(generics.UpdateAPIView, generics.DestroyAPIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
+class EventRetrieveView(generics.RetrieveAPIView):
+    serializer_class = EventSerializer
+    allowed_methods = ["GET"]
+    queryset = Event.objects.all()
+
+    def get_queryset(self):
+        return Event.objects.filter(uuid=self.kwargs.get("uuid"))
+
+    def get_object(self):
+        return self.queryset.first()
+
+
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
@@ -147,10 +159,7 @@ class EventDateView(generics.ListCreateAPIView):
         additional_dates: List[date] = request.data.get("additional_dates")
         associated_event_id: int = kwargs.get("pk")
 
-        try:
-            associated_event: Event = get_object_or_404(Event, id=associated_event_id)
-        except Http404:
-            raise InstanceNotFound("event with the provided id does not exist")
+        associated_event: Event = EventService.get_event_by_id(associated_event_id)
 
         associated_dates: List[EventDate] = []
 
@@ -360,7 +369,7 @@ class UserScheduleView(generics.ListAPIView, generics.DestroyAPIView):
     queryset = Schedule.objects.all().order_by("date__date")
     filter_backends = [filters.SearchFilter]
     search_fields = ["name"]
-    allowed_methods = ["GET", "PATCH", "DELETE"]
+    allowed_methods = ["GET", "DELETE"]
 
     def get_queryset(self):
         qs = self.queryset.filter(

@@ -1,18 +1,21 @@
+import json
 from datetime import datetime
 from pytz import timezone
 from rest_framework.relations import PrimaryKeyRelatedField
 
+from apps.event.services import EventService
 from config.settings.base import TIME_ZONE
 
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from apps.event.models import Event, EventDate, Schedule
-from typing import Dict
+from typing import Dict, Union
 
 
 class EventSerializer(serializers.ModelSerializer):
     # TODO: associated_team
     # associated_team = PrimaryKeyRelatedField(queryset=Team.objects.all())
+    availability = serializers.SerializerMethodField()
 
     class Meta:
         model = Event
@@ -23,15 +26,23 @@ class EventSerializer(serializers.ModelSerializer):
             "title",
             "start_time",
             "end_time",
+            "availability",
             "created_at",
             "updated_at",
         ]
         read_only_fields = [
             "id",
             "uuid",
+            "availability",
             "created_at",
             "updated_at",
         ]
+
+    def get_availability(self, obj):
+        print(obj)
+        event_service: EventService = EventService(obj.id)
+        availability: dict[str, str] = event_service.get_availability_str()
+        return availability
 
     @staticmethod
     def time_validation(time_exp: str):
@@ -96,8 +107,8 @@ class EventDateSerializer(serializers.ModelSerializer):
 
 
 class ByteArrayField(serializers.Field):
-    def to_representation(self, value: bytearray) -> list:
-        return list(value)
+    def to_representation(self, value: list[int]) -> str:
+        return "".join(str(e) for e in value)
 
     def to_internal_value(self, data):
         if not isinstance(data, bytearray):
@@ -131,9 +142,3 @@ class ScheduleSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
-
-    # def validate_availability(self, value: bytes) -> bytes:
-    #     if len(value) != 48:
-    #         raise ValidationError("availability must be 48 length array")
-    #
-    #     return value
