@@ -39,9 +39,8 @@ class EventSerializer(serializers.ModelSerializer):
         ]
 
     def get_availability(self, obj):
-        print(obj)
         event_service: EventService = EventService(obj.id)
-        availability: dict[str, str] = event_service.get_availability_str()
+        availability: Union[dict[str, str], None] = event_service.get_availability_str()
         return availability
 
     @staticmethod
@@ -120,7 +119,6 @@ class ByteArrayField(serializers.Field):
 
 
 class ScheduleSerializer(serializers.ModelSerializer):
-    event = EventSerializer(read_only=True)
     date = serializers.StringRelatedField()
     availability = ByteArrayField()
 
@@ -137,7 +135,6 @@ class ScheduleSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = [
             "id",
-            "event",
             "date",
             "created_at",
             "updated_at",

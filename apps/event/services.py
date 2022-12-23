@@ -35,16 +35,22 @@ class EventService(object):
         s = shortuuid.encode(u)
         return s
 
-    def calculate_event_availability(self) -> dict[str, list[int]]:
+    def calculate_event_availability(self) -> Union[dict[str, list[int]], None]:
         associated_dates = EventDateService.get_dates_by_event_id(self.event.id)
+
+        if len(associated_dates) == 0:
+            return None
 
         availability_obj = {}
 
         for date in associated_dates:
             availabilities = [0] * 48
-            schedules = get_list_or_404(
-                Schedule, event_id=self.event.id, date_id=date.id
-            )
+            try:
+                schedules = get_list_or_404(
+                    Schedule, event_id=self.event.id, date_id=date.id
+                )
+            except Http404:
+                continue
             for s in schedules:
                 availabilities = [
                     x + y for x, y in zip(availabilities, list(s.availability))
@@ -53,14 +59,19 @@ class EventService(object):
 
         return availability_obj
 
-    def get_availability_str(self) -> dict[str, str]:
-        availability_obj: dict[
-            str, Union[str, list[int]]
-        ] = self.calculate_event_availability()
-        for (k, v) in availability_obj.items():
-            availability_obj[k] = "".join(str(e) for e in v)
+    def get_availability_str(self) -> Union[dict[str, str], None]:
 
-        return availability_obj
+        availability_obj: Union[
+            dict[str, Union[str, list[int]]], None
+        ] = self.calculate_event_availability()
+
+        if availability_obj is None:
+            return None
+        else:
+            for (k, v) in availability_obj.items():
+                availability_obj[k] = "".join(str(e) for e in v)
+
+            return availability_obj
 
 
 class EventDateService(object):
@@ -81,27 +92,15 @@ class EventDateService(object):
 
     @staticmethod
     def get_dates_by_event_id(event_id: int):
-        try:
-            dates: list[EventDate] = get_list_or_404(EventDate, event_id=event_id)
-        except Http404:
-            raise InstanceNotFound("dates with the provided event id does not exist")
-        return dates
+        return EventDate.objects.filter(event_id=event_id).all()
 
 
 class ScheduleService(object):
-    def __init__(
-        self: ScheduleService, request: Request, schedule_id: Union[int, None] = None
-    ):
-        self.schedule = self.get_schedule_by_id(schedule_id)
-        self.request = request
-
     @staticmethod
-    def get_schedule_by_id(schedule_id: int):
-        try:
-            schedule: Schedule = get_object_or_404(Schedule, id=schedule_id)
-        except Http404:
-            raise InstanceNotFound("schedule with the provided id does not exist")
-        return schedule
+    def get_schedule(event_id: int, date_id: int, name: str):
+        return Schedule.objects.filter(
+            event_id=event_id, date_id=date_id, name=name
+        ).all()
 
     @staticmethod
     def get_schedules_by_event_id(event_id: int):
