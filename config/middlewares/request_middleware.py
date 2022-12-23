@@ -29,7 +29,7 @@ class RequestMiddleware:
         return response
 
     def process_request(self, request):
-        if request.path.split("/")[1] not in ["api", "swagger", "redoc"]:
+        if "api" not in request.path:
             raise ValidationError("all urls must include '/api'")
         else:
             if (
