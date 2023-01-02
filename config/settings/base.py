@@ -46,6 +46,7 @@ THIRD_PARTY_APPS = [
     "drf_yasg",
     "django_filters",
     "django_extensions",
+    "corsheaders",
 ]
 
 DJANGO_CORE_APPS = [
@@ -62,6 +63,7 @@ INSTALLED_APPS = DJANGO_CORE_APPS + THIRD_PARTY_APPS + BISTIME_APPS
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -69,6 +71,28 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "config.middlewares.add_headers.AddHeaders",
     "config.middlewares.request_middleware.RequestMiddleware",
+]
+
+# CORS
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+]
+
+CORS_ALLOW_HEADERS = [
+    "accept",
+    "accept-encoding",
+    "authorization",
+    "content-type",
+    "dnt",
+    "origin",
+    "user-agent",
+    "x-csrftoken",
+    "x-requested-with",
+    "access-control-allow-headers",
+]
+
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:3000",
 ]
 
 ROOT_URLCONF = "config.urls"
