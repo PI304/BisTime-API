@@ -14,6 +14,7 @@ from pathlib import Path
 import os
 import sys
 from dotenv import load_dotenv
+from corsheaders.defaults import default_headers
 
 load_dotenv()
 
@@ -74,19 +75,11 @@ MIDDLEWARE = [
 ]
 
 # CORS
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOWED_ORIGINS = ["http://localhost:3000"]
 
-CORS_ALLOW_HEADERS = [
-    "accept",
-    "accept-encoding",
-    "authorization",
-    "content-type",
-    "dnt",
-    "origin",
-    "user-agent",
-    "x-csrftoken",
-    "x-requested-with",
-    "access-control-allow-headers",
+
+CORS_ALLOW_HEADERS = list(default_headers) + [
+    "version",
 ]
 
 CSRF_TRUSTED_ORIGINS = [
