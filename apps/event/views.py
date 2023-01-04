@@ -46,10 +46,10 @@ class EventView(generics.ListCreateAPIView):
                     type=openapi.TYPE_INTEGER, description="연관된 팀"
                 ),
                 "title": openapi.Schema(type=openapi.TYPE_STRING, description="제목"),
-                "start_time": openapi.Schema(
+                "startTime": openapi.Schema(
                     type=openapi.TYPE_STRING, description="시간 범위의 시작점"
                 ),
-                "end_time": openapi.Schema(
+                "endTime": openapi.Schema(
                     type=openapi.TYPE_STRING, description="시간 범위의 끝점"
                 ),
             },
@@ -90,13 +90,13 @@ class EventDetailView(generics.UpdateAPIView, generics.DestroyAPIView):
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
             properties={
-                "associated_team": openapi.Schema(
+                "associatedTeam": openapi.Schema(
                     type=openapi.TYPE_INTEGER, description="연관된 팀"
                 ),
-                "start_time": openapi.Schema(
+                "startTime": openapi.Schema(
                     type=openapi.TYPE_STRING, description="시간 범위의 시작점"
                 ),
-                "end_time": openapi.Schema(
+                "endTime": openapi.Schema(
                     type=openapi.TYPE_STRING, description="시간 범위의 끝점"
                 ),
             },
@@ -155,7 +155,7 @@ class EventDateView(generics.ListCreateAPIView):
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
             properties={
-                "additional_dates": openapi.Schema(
+                "additionalDates": openapi.Schema(
                     type=openapi.TYPE_ARRAY,
                     items=openapi.Schema(type=openapi.FORMAT_DATE),
                     description="추가할 날짜 리스트",
