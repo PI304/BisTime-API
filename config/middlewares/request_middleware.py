@@ -32,6 +32,10 @@ class RequestMiddleware:
         if "api" not in request.path:
             raise ValidationError("all urls must include '/api'")
         else:
+            if len(request.headers["Accept"].split(";")) < 2:
+                raise ValidationError(
+                    "Accept header must be 'application/json; version=1;'"
+                )
             if (
                 request.path.split("/")[2] not in ["swagger", "redoc", "admin"]
                 and "version" not in request.headers["Accept"].split(";")[1]
