@@ -33,6 +33,7 @@ class EventSerializer(serializers.ModelSerializer):
         read_only_fields = [
             "id",
             "uuid",
+            "associated_team",
             "availability",
             "created_at",
             "updated_at",
