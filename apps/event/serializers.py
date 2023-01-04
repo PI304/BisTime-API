@@ -33,6 +33,7 @@ class EventSerializer(serializers.ModelSerializer):
         read_only_fields = [
             "id",
             "uuid",
+            "associated_team",
             "availability",
             "created_at",
             "updated_at",
@@ -83,7 +84,7 @@ class EventSerializer(serializers.ModelSerializer):
 
 
 class EventDateSerializer(serializers.ModelSerializer):
-    event = EventSerializer(read_only=True)
+    # event = EventSerializer(read_only=True)
 
     class Meta:
         model = EventDate
@@ -136,6 +137,7 @@ class ScheduleSerializer(serializers.ModelSerializer):
         read_only_fields = [
             "id",
             "date",
+            "event",
             "created_at",
             "updated_at",
         ]

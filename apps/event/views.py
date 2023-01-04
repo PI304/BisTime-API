@@ -46,10 +46,10 @@ class EventView(generics.ListCreateAPIView):
                     type=openapi.TYPE_INTEGER, description="연관된 팀"
                 ),
                 "title": openapi.Schema(type=openapi.TYPE_STRING, description="제목"),
-                "start_time": openapi.Schema(
+                "startTime": openapi.Schema(
                     type=openapi.TYPE_STRING, description="시간 범위의 시작점"
                 ),
-                "end_time": openapi.Schema(
+                "endTime": openapi.Schema(
                     type=openapi.TYPE_STRING, description="시간 범위의 끝점"
                 ),
             },
@@ -77,6 +77,9 @@ class EventDetailView(generics.UpdateAPIView, generics.DestroyAPIView):
     queryset = Event.objects.all()
     allowed_methods = ["PATCH", "DELETE"]
 
+    def get_object(self):
+        return self.queryset.filter(uuid=self.kwargs.get("uuid")).first()
+
     @swagger_auto_schema(
         operation_summary="Update an instant event",
         operation_description="only updates start_time, end_time",
@@ -87,13 +90,13 @@ class EventDetailView(generics.UpdateAPIView, generics.DestroyAPIView):
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
             properties={
-                "associated_team": openapi.Schema(
+                "associatedTeam": openapi.Schema(
                     type=openapi.TYPE_INTEGER, description="연관된 팀"
                 ),
-                "start_time": openapi.Schema(
+                "startTime": openapi.Schema(
                     type=openapi.TYPE_STRING, description="시간 범위의 시작점"
                 ),
-                "end_time": openapi.Schema(
+                "endTime": openapi.Schema(
                     type=openapi.TYPE_STRING, description="시간 범위의 끝점"
                 ),
             },
@@ -133,10 +136,13 @@ class EventDateView(generics.ListCreateAPIView):
     allowed_methods = ["POST"]
 
     def get_queryset(self):
-        qs = self.queryset.filter(event_id=self.kwargs.get("pk")).order_by(
+        qs = self.queryset.filter(event__uuid=self.kwargs.get("uuid")).order_by(
             "event__id", "date"
         )
         return qs
+
+    def get_object(self):
+        return self.get_queryset().filter(event__uuid=self.kwargs.get("uuid")).first()
 
     @swagger_auto_schema(
         operation_summary="Update(Add) an instant event's date",
@@ -149,7 +155,7 @@ class EventDateView(generics.ListCreateAPIView):
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
             properties={
-                "additional_dates": openapi.Schema(
+                "additionalDates": openapi.Schema(
                     type=openapi.TYPE_ARRAY,
                     items=openapi.Schema(type=openapi.FORMAT_DATE),
                     description="추가할 날짜 리스트",
@@ -159,16 +165,16 @@ class EventDateView(generics.ListCreateAPIView):
     )
     def post(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         additional_dates: List[date] = request.data.get("additional_dates")
-        associated_event_id: int = kwargs.get("pk")
+        associated_event_uuid: str = kwargs.get("uuid")
 
-        associated_event: Event = EventService.get_event_by_id(associated_event_id)
+        associated_event: Event = EventService.get_event_by_uuid(associated_event_uuid)
 
         associated_dates: List[EventDate] = []
 
         for d in additional_dates:
             try:
                 existing_date = get_object_or_404(
-                    EventDate, event_id=associated_event_id, date=d
+                    EventDate, event_id=associated_event.id, date=d
                 )
                 continue
             except Http404:
@@ -215,7 +221,7 @@ class ScheduleView(generics.ListCreateAPIView, generics.UpdateAPIView):
     search_fields = ["name"]
 
     def get_queryset(self):
-        qs = self.queryset.filter(event_id=self.kwargs.get("pk"))
+        qs = self.queryset.filter(event__uuid=self.kwargs.get("uuid"))
         return qs
 
     @swagger_auto_schema(
@@ -234,27 +240,27 @@ class ScheduleView(generics.ListCreateAPIView, generics.UpdateAPIView):
                         items=openapi.Schema(
                             type=openapi.FORMAT_BINARY, description="0 혹은 1"
                         ),
-                        description="0 혹은 1 로 구성된 length 48 짜리 byte array",
+                        description="0 혹은 1 로 구성된 length 48 짜리 string",
                     ),
-                    description="이벤트에 추가된 날짜 순서대로 byte array의 array 전달",
+                    description="이벤트에 추가된 날짜 순서대로 48개 string 전달",
                 ),
             },
         ),
     )
     def post(self, request: Request, *args: Any, **kwargs: Any) -> Response:
-        event_id: int = kwargs.get("pk")
+        event_uuid: str = kwargs.get("uuid")
         name: str = request.data.get("name")
 
-        associated_event: Event = EventService.get_event_by_id(event_id)
+        associated_event: Event = EventService.get_event_by_uuid(event_uuid)
 
         try:
             associated_dates: List[EventDate] = get_list_or_404(
-                EventDate.objects.filter(event_id=event_id).order_by("date")
+                EventDate.objects.filter(event_id=associated_event.id).order_by("date")
             )
         except Http404:
             raise InstanceNotFound("event has no associated dates to add schedule to")
 
-        availability: list[list[int]] = request.data.get("availability")
+        availability: list[str] = request.data.get("availability")
 
         if len(associated_dates) != len(availability):
             raise ValidationError(
@@ -266,13 +272,17 @@ class ScheduleView(generics.ListCreateAPIView, generics.UpdateAPIView):
         for i in range(len(associated_dates)):
             try:
                 instance = get_object_or_404(
-                    Schedule, name=name, date=associated_dates[i].id, event_id=event_id
+                    Schedule,
+                    name=name,
+                    date=associated_dates[i].id,
+                    event_id=associated_event.id,
                 )
 
                 # instance 있을 때 -> update Instance
                 serializer = self.get_serializer(
                     instance,
-                    data={"availability": bytearray(availability[i])},
+                    # data={"availability": bytearray(availability[i])},
+                    data={"availability": bytearray([int(n) for n in availability[i]])},
                     partial=True,
                 )
                 if serializer.is_valid(raise_exception=True):
@@ -282,7 +292,7 @@ class ScheduleView(generics.ListCreateAPIView, generics.UpdateAPIView):
                 # instance 없을 때 -> 새로 생성
                 data = {
                     "name": name,
-                    "availability": bytearray(availability[i]),
+                    "availability": bytearray([int(n) for n in availability[i]]),
                 }
                 serializer = self.get_serializer(data=data)
                 if serializer.is_valid(raise_exception=True):
@@ -309,32 +319,34 @@ class ScheduleView(generics.ListCreateAPIView, generics.UpdateAPIView):
                     type=openapi.TYPE_INTEGER, description="수정하고자 하는 날짜 entry 의 ID"
                 ),
                 "availability": openapi.Schema(
-                    type=openapi.TYPE_ARRAY,
-                    items=openapi.Schema(
-                        type=openapi.FORMAT_BINARY, description="0 혹은 1"
-                    ),
-                    description="하루를 48등분 (30분 단위) 하여 byte array 형태로 전달",
+                    type=openapi.TYPE_STRING,
+                    description="하루를 48등분 (30분 단위) 하여 0과 1로 구성된 string 형태로 전달",
                 ),
             },
         ),
     )
     def patch(self, request: Request, *args: Any, **kwargs: Any) -> Response:
-        event_id: int = kwargs.get("pk")
+        event_uuid: str = kwargs.get("uuid")
 
         name: str = request.data.get("name")
         date_id: int = request.data.get("date")
-        availability_arr = request.data["availability"]
+        availability: str = request.data.get("availability")
 
-        associated_event = EventService.get_event_by_id(kwargs.get("pk"))
+        associated_event = EventService.get_event_by_uuid(event_uuid)
 
         try:
-            existing_date = get_object_or_404(EventDate, event_id=event_id, id=date_id)
+            existing_date = get_object_or_404(
+                EventDate, event_id=associated_event.id, id=date_id
+            )
             try:
                 existing_schedule = get_object_or_404(
-                    Schedule, event_id=event_id, name=name, date_id=existing_date.id
+                    Schedule,
+                    event_id=associated_event.id,
+                    name=name,
+                    date_id=existing_date.id,
                 )
                 # update schedule
-                availability_bytes = bytearray(availability_arr)
+                availability_bytes = bytearray([int(n) for n in availability])
 
                 data = {"availability": availability_bytes}
                 serializer = self.get_serializer(
@@ -346,7 +358,10 @@ class ScheduleView(generics.ListCreateAPIView, generics.UpdateAPIView):
                 return Response(serializer.data, status=status.HTTP_200_OK)
             except Http404 as e:
                 # 새로운 스케줄 생성
-                data = {"name": name, "availability": bytearray(availability_arr)}
+                data = {
+                    "name": name,
+                    "availability": bytearray([int(n) for n in availability]),
+                }
                 serializer = self.get_serializer(data=data)
                 if serializer.is_valid(raise_exception=True):
                     serializer.save(event=associated_event, date=existing_date)
@@ -360,6 +375,7 @@ class ScheduleView(generics.ListCreateAPIView, generics.UpdateAPIView):
     name="get",
     decorator=swagger_auto_schema(
         operation_summary="Get user's schedule data associated with a single instant event",
+        operation_description="use query string 'name' to search against a certain user",
         responses={200: openapi.Response("Success", ScheduleSerializer)},
     ),
 )
@@ -371,14 +387,13 @@ class UserScheduleView(generics.ListAPIView, generics.DestroyAPIView):
     allowed_methods = ["GET", "DELETE"]
 
     def get_queryset(self):
-        qs = self.queryset.filter(
-            event=self.kwargs.get("pk"), name=self.kwargs.get("name")
-        )
+        name = self.request.GET.get("name")
+        qs = self.queryset.filter(event__uuid=self.kwargs.get("uuid"), name=name)
         return qs
 
     def get_objects(self) -> List[Schedule]:
         return Schedule.objects.filter(
-            event=self.kwargs.get("pk"), name=self.kwargs.get("name")
+            event__uuid=self.kwargs.get("uuid"), name=self.kwargs.get("name")
         )
 
     @swagger_auto_schema(

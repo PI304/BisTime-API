@@ -30,6 +30,14 @@ class EventService(object):
         return event
 
     @staticmethod
+    def get_event_by_uuid(event_uuid: str) -> Event:
+        try:
+            event: Event = get_object_or_404(Event, uuid=event_uuid)
+        except Http404:
+            raise InstanceNotFound("event with the provided id does not exist")
+        return event
+
+    @staticmethod
     def generate_uuid() -> str:
         u = uuid.uuid4()
         s = shortuuid.encode(u)
