@@ -72,13 +72,16 @@ class EventView(generics.ListCreateAPIView):
         responses={200: openapi.Response("Success", EventDateSerializer)},
     ),
 )
-class EventDetailView(generics.UpdateAPIView, generics.DestroyAPIView):
+class EventDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = EventSerializer
     queryset = Event.objects.all()
-    allowed_methods = ["PATCH", "DELETE"]
+    allowed_methods = ["GET", "PATCH", "DELETE"]
+
+    def get_queryset(self):
+        return Event.objects.filter(uuid=self.kwargs.get("uuid"))
 
     def get_object(self):
-        return self.queryset.filter(uuid=self.kwargs.get("uuid")).first()
+        return self.queryset.first()
 
     @swagger_auto_schema(
         operation_summary="Update an instant event",
@@ -109,18 +112,6 @@ class EventDetailView(generics.UpdateAPIView, generics.DestroyAPIView):
         serializer.save(updated_at=datetime.now())
 
         return Response(serializer.data, status=status.HTTP_200_OK)
-
-
-class EventRetrieveView(generics.RetrieveAPIView):
-    serializer_class = EventSerializer
-    allowed_methods = ["GET"]
-    queryset = Event.objects.all()
-
-    def get_queryset(self):
-        return Event.objects.filter(uuid=self.kwargs.get("uuid"))
-
-    def get_object(self):
-        return self.queryset.first()
 
 
 @method_decorator(
