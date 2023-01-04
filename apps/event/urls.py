@@ -18,7 +18,7 @@ urlpatterns = [
     path("dates/<int:pk>/", EventDateDestroyView.as_view(), name="dates-detail"),
     path("<int:pk>/schedules/", ScheduleView.as_view(), name="schedule-list"),
     path(
-        "<int:pk>/schedules/<str:name>/",
+        "<int:pk>/user-schedules/",
         UserScheduleView.as_view(),
         name="user-schedule-list",
     ),

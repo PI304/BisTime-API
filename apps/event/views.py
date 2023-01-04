@@ -372,9 +372,8 @@ class UserScheduleView(generics.ListAPIView, generics.DestroyAPIView):
     allowed_methods = ["GET", "DELETE"]
 
     def get_queryset(self):
-        qs = self.queryset.filter(
-            event=self.kwargs.get("pk"), name=self.kwargs.get("name")
-        )
+        name = self.request.GET.get("name")
+        qs = self.queryset.filter(event=self.kwargs.get("pk"), name=name)
         return qs
 
     def get_objects(self) -> List[Schedule]:
