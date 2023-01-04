@@ -234,9 +234,9 @@ class ScheduleView(generics.ListCreateAPIView, generics.UpdateAPIView):
                         items=openapi.Schema(
                             type=openapi.FORMAT_BINARY, description="0 혹은 1"
                         ),
-                        description="0 혹은 1 로 구성된 length 48 짜리 byte array",
+                        description="0 혹은 1 로 구성된 length 48 짜리 string",
                     ),
-                    description="이벤트에 추가된 날짜 순서대로 byte array의 array 전달",
+                    description="이벤트에 추가된 날짜 순서대로 48개 string 전달",
                 ),
             },
         ),
@@ -254,7 +254,7 @@ class ScheduleView(generics.ListCreateAPIView, generics.UpdateAPIView):
         except Http404:
             raise InstanceNotFound("event has no associated dates to add schedule to")
 
-        availability: list[list[int]] = request.data.get("availability")
+        availability: list[str] = request.data.get("availability")
 
         if len(associated_dates) != len(availability):
             raise ValidationError(
@@ -272,7 +272,8 @@ class ScheduleView(generics.ListCreateAPIView, generics.UpdateAPIView):
                 # instance 있을 때 -> update Instance
                 serializer = self.get_serializer(
                     instance,
-                    data={"availability": bytearray(availability[i])},
+                    # data={"availability": bytearray(availability[i])},
+                    data={"availability": bytearray([int(n) for n in availability[i]])},
                     partial=True,
                 )
                 if serializer.is_valid(raise_exception=True):
@@ -282,7 +283,7 @@ class ScheduleView(generics.ListCreateAPIView, generics.UpdateAPIView):
                 # instance 없을 때 -> 새로 생성
                 data = {
                     "name": name,
-                    "availability": bytearray(availability[i]),
+                    "availability": bytearray([int(n) for n in availability[i]]),
                 }
                 serializer = self.get_serializer(data=data)
                 if serializer.is_valid(raise_exception=True):
@@ -309,11 +310,8 @@ class ScheduleView(generics.ListCreateAPIView, generics.UpdateAPIView):
                     type=openapi.TYPE_INTEGER, description="수정하고자 하는 날짜 entry 의 ID"
                 ),
                 "availability": openapi.Schema(
-                    type=openapi.TYPE_ARRAY,
-                    items=openapi.Schema(
-                        type=openapi.FORMAT_BINARY, description="0 혹은 1"
-                    ),
-                    description="하루를 48등분 (30분 단위) 하여 byte array 형태로 전달",
+                    type=openapi.TYPE_STRING,
+                    description="하루를 48등분 (30분 단위) 하여 0과 1로 구성된 string 형태로 전달",
                 ),
             },
         ),
@@ -323,7 +321,7 @@ class ScheduleView(generics.ListCreateAPIView, generics.UpdateAPIView):
 
         name: str = request.data.get("name")
         date_id: int = request.data.get("date")
-        availability_arr = request.data["availability"]
+        availability: str = request.data.get("availability")
 
         associated_event = EventService.get_event_by_id(kwargs.get("pk"))
 
@@ -334,7 +332,7 @@ class ScheduleView(generics.ListCreateAPIView, generics.UpdateAPIView):
                     Schedule, event_id=event_id, name=name, date_id=existing_date.id
                 )
                 # update schedule
-                availability_bytes = bytearray(availability_arr)
+                availability_bytes = bytearray([int(n) for n in availability])
 
                 data = {"availability": availability_bytes}
                 serializer = self.get_serializer(
@@ -346,7 +344,10 @@ class ScheduleView(generics.ListCreateAPIView, generics.UpdateAPIView):
                 return Response(serializer.data, status=status.HTTP_200_OK)
             except Http404 as e:
                 # 새로운 스케줄 생성
-                data = {"name": name, "availability": bytearray(availability_arr)}
+                data = {
+                    "name": name,
+                    "availability": bytearray([int(n) for n in availability]),
+                }
                 serializer = self.get_serializer(data=data)
                 if serializer.is_valid(raise_exception=True):
                     serializer.save(event=associated_event, date=existing_date)
