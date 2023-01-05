@@ -9,20 +9,22 @@ from .views import (
 )
 
 urlpatterns = [
-    path("", TeamCreateView.as_view(), name="team-create"),
-    path("<int:pk>", TeamDetailView.as_view(), name="team-detail"),
+    path("/", TeamCreateView.as_view(), name="team-create"),
+    path("/<int:pk>", TeamDetailView.as_view(), name="team-detail"),
     path(
-        "<int:pk>/events/", TeamRegularEventListView.as_view(), name="team-events-list"
+        "/<int:pk>/regular-events",
+        TeamRegularEventListView.as_view(),
+        name="team-events-list",
     ),
     path(
-        "<int:pk>/events/<int:event_id>",
+        "/regular-events/<int:pk>",
         TeamRegularEventDetailView.as_view(),
         name="team-events-detail",
     ),
-    path("<int:pk>/subgroups/", SubgroupListView.as_view(), name="subgroups-create"),
+    path("/<int:pk>/subgroups", SubgroupListView.as_view(), name="subgroups-create"),
     path(
-        "<int:pk>/subgroups/<int:subgroup_id>/",
+        "/subgroups/<int:pk>/",
         SubgroupDetailView.as_view(),
-        name="subgroups-create",
+        name="subgroup-detail",
     ),
 ]

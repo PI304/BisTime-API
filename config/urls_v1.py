@@ -48,26 +48,26 @@ def hello_world(request: Request) -> Response:
 
 urlpatterns = [
     path("", hello_world),
-    path("admin/", admin.site.urls),
-    path("events/", include("apps.event.urls")),
-    path("teams/", include("apps.team.urls")),
-    path("security-questions/", include("apps.security_question.urls")),
-    path("api-auth/", include("rest_framework.urls")),
+    path("/admin", admin.site.urls),
+    path("/events", include("apps.event.urls")),
+    path("/teams", include("apps.team.urls")),
+    path("/security-questions", include("apps.security_question.urls")),
+    path("/api-auth", include("rest_framework.urls")),
 ]
 
 urlpatterns += [
     re_path(
-        r"^swagger(?P<format>\.json|\.yaml)/$",
+        r"^/swagger(?P<format>\.json|\.yaml)/$",
         SchemaView.without_ui(cache_timeout=0),
         name="schema-json",
     ),
     re_path(
-        r"^swagger/$",
+        r"^/swagger/$",
         SchemaView.with_ui("swagger", cache_timeout=0),
         name="schema-swagger-ui",
     ),
     re_path(
-        r"^redoc/$",
+        r"^/redoc/$",
         SchemaView.with_ui("redoc", cache_timeout=0),
         name="schema-redoc-ui",
     ),
