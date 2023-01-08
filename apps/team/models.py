@@ -84,7 +84,6 @@ class SubGroup(TimeStampMixin):
 
     class Meta:
         db_table = "subgroup"
-        unique_together = [["name", "team_id"]]
 
     def __str__(self) -> str:
         return f"[{self.id}] {self.name} (team_id: {self.team_id}"
