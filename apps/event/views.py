@@ -78,10 +78,10 @@ class EventDetailView(generics.RetrieveUpdateDestroyAPIView):
     allowed_methods = ["GET", "PATCH", "DELETE"]
 
     def get_queryset(self):
-        return Event.objects.filter(uuid=self.kwargs.get("uuid"))
+        return self.queryset.filter(uuid=self.kwargs.get("uuid"))
 
     def get_object(self):
-        return self.queryset.first()
+        return self.get_queryset().first()
 
     @swagger_auto_schema(
         operation_summary="Update an instant event",
@@ -105,13 +105,8 @@ class EventDetailView(generics.RetrieveUpdateDestroyAPIView):
             },
         ),
     )
-    def patch(self, request: Request, *args: Any, **kwargs: Any) -> Response:
-        instance = self.get_object()
-        serializer = self.get_serializer(instance, data=request.data, partial=True)
-        serializer.is_valid(raise_exception=True)
+    def perform_update(self, serializer):
         serializer.save(updated_at=datetime.now())
-
-        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 @method_decorator(
