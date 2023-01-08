@@ -6,22 +6,28 @@ from .views import (
     TeamRegularEventDetailView,
     SubgroupListView,
     SubgroupDetailView,
+    TeamAdminCodeVerificationView,
 )
 
 urlpatterns = [
     path("/", TeamCreateView.as_view(), name="team-create"),
-    path("/<int:pk>", TeamDetailView.as_view(), name="team-detail"),
+    path("/<str:uuid>", TeamDetailView.as_view(), name="team-detail"),
     path(
-        "/<int:pk>/regular-events",
+        "/<str:uuid>/admin/verify",
+        TeamAdminCodeVerificationView.as_view(),
+        name="code-verification",
+    ),
+    path(
+        "/<str:uuid>/regular-events",
         TeamRegularEventListView.as_view(),
         name="team-events-list",
     ),
     path(
-        "/regular-events/<int:pk>",
+        "/regular-events/<str:uuid>",
         TeamRegularEventDetailView.as_view(),
         name="team-events-detail",
     ),
-    path("/<int:pk>/subgroups", SubgroupListView.as_view(), name="subgroups-create"),
+    path("/<str:uuid>/subgroups", SubgroupListView.as_view(), name="subgroups-create"),
     path(
         "/subgroups/<int:pk>/",
         SubgroupDetailView.as_view(),
