@@ -1,3 +1,4 @@
+from django.shortcuts import get_list_or_404
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
@@ -6,6 +7,7 @@ from apps.team.models import Team, TeamRegularEvent, SubGroup
 
 
 class TeamSerializer(serializers.ModelSerializer):
+    subgroups = serializers.SerializerMethodField()
     security_question = (
         serializers.StringRelatedField()
     )  # TODO: security question models
@@ -34,6 +36,10 @@ class TeamSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
 
+    def get_subgroups(self, obj) -> list[str]:
+        subgroups: list[SubGroup] = get_list_or_404(SubGroup, team_id=obj.id)
+        return [s.name for s in subgroups]
+
 
 class TeamRegularEventSerializer(serializers.ModelSerializer):
     team = TeamSerializer(read_only=True)
@@ -44,7 +50,8 @@ class TeamRegularEventSerializer(serializers.ModelSerializer):
             "id",
             "uuid",
             "team",
-            "day",
+            "title",
+            "description" "day",
             "start_time",
             "end_time",
             "created_at",
@@ -69,6 +76,9 @@ class TeamRegularEventSerializer(serializers.ModelSerializer):
                 < 0
             ):
                 raise ValidationError("end_time should be larger than start_time")
+
+        if data["day"] < 0 or data["day"] > 6:
+            raise ValidationError("day should be between 0 and 6")
 
         return data
 
