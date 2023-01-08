@@ -63,6 +63,9 @@ class TeamRegularEvent(TimeStampMixin, TimeBlockMixin):
     def get_day_of_week(self, day_of_week: str) -> DayOfWeek:
         return self.DayOfWeek[day_of_week]
 
+    class Meta:
+        db_table = "team_regular_event"
+
     def __str__(self) -> str:
         return f"[{self.id}] {self.title} (team_id: {self.team_id}"
 
