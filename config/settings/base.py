@@ -75,7 +75,10 @@ MIDDLEWARE = [
 ]
 
 # CORS
-CORS_ALLOWED_ORIGINS = ["http://localhost:3000"]
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "https://bis-time-frontend-git-dev-pi-dev.vercel.app",
+]
 
 
 CORS_ALLOW_HEADERS = list(default_headers) + [
@@ -84,6 +87,7 @@ CORS_ALLOW_HEADERS = list(default_headers) + [
 
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:3000",
+    "https://bis-time-frontend-git-dev-pi-dev.vercel.app",
 ]
 
 ROOT_URLCONF = "config.urls"
