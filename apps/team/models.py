@@ -44,18 +44,16 @@ class TeamRegularEvent(TimeStampMixin, TimeBlockMixin):
     """
 
     class DayOfWeek(models.IntegerChoices):
-        MON = 0
-        TUE = 1
-        WED = 2
-        THU = 3
-        FRI = 4
-        SAT = 5
-        SUN = 6
+        MON = (0, "MON")
+        TUE = (1, "TUE")
+        WED = (2, "WED")
+        THU = (3, "THU")
+        FRI = (4, "FRI")
+        SAT = (5, "SAT")
+        SUN = (6, "SUN")
 
     id = models.BigAutoField(primary_key=True)
-    uuid = models.CharField(
-        max_length=23, validators=[MinLengthValidator(23)], null=False
-    )
+    uuid = models.CharField(max_length=23, null=False)
     title = models.CharField(max_length=100, null=False, blank=False)
     description = models.CharField(max_length=200, null=False, blank=True)
     team = models.ForeignKey(Team, on_delete=models.CASCADE, related_name="team_event")
