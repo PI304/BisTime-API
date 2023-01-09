@@ -1,7 +1,5 @@
 from django.db import models
 from django.core.validators import MinLengthValidator
-from django.utils.translation import gettext_lazy as _
-from apps.security_question.models import SecurityQuestion
 from config.mixins import TimeStampMixin, TimeBlockMixin
 
 
@@ -22,7 +20,10 @@ class Team(TimeStampMixin):
         max_length=6, validators=[MinLengthValidator(6)], null=False
     )
     security_question = models.ForeignKey(
-        SecurityQuestion, on_delete=models.DO_NOTHING, null=True
+        "security_question.TeamSecurityQuestion",
+        on_delete=models.DO_NOTHING,
+        null=True,
+        related_name="team_security_question",
     )
     custom_security_question = models.CharField(max_length=200, null=True)
     security_answer = models.CharField(max_length=50, null=False)
@@ -43,13 +44,13 @@ class TeamRegularEvent(TimeStampMixin, TimeBlockMixin):
     """
 
     class DayOfWeek(models.IntegerChoices):
-        MON = 0, _("Monday")
-        TUE = 1, _("Tuesday")
-        WED = 2, _("Wednesday")
-        THU = 3, _("Thursday")
-        FRI = 4, _("Friday")
-        SAT = 5, _("Saturday")
-        SUN = 6, _("Sunday")
+        MON = 0
+        TUE = 1
+        WED = 2
+        THU = 3
+        FRI = 4
+        SAT = 5
+        SUN = 6
 
     id = models.BigAutoField(primary_key=True)
     uuid = models.CharField(
