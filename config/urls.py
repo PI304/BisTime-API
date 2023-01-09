@@ -8,5 +8,5 @@ def health_check_view(request):
 
 urlpatterns = [
     path("health-check", health_check_view, name="health-check"),
-    re_path(r"^api/", include("config.urls_v1")),
+    re_path(r"^api", include("config.urls_v1")),
 ]
