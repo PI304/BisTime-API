@@ -29,7 +29,7 @@ urlpatterns = [
     ),
     path("/<str:uuid>/subgroups", SubgroupListView.as_view(), name="subgroups-create"),
     path(
-        "/subgroups/<int:pk>/",
+        "/subgroups/<int:pk>",
         SubgroupDetailView.as_view(),
         name="subgroup-detail",
     ),

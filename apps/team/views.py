@@ -143,7 +143,7 @@ class TeamRegularEventListView(generics.ListCreateAPIView):
     def get_object(self) -> Team:
         # Get Team instance
         try:
-            instance = get_object_or_404(Team, id=self.kwargs.get("uuid"))
+            instance = get_object_or_404(Team, uuid=self.kwargs.get("uuid"))
         except Http404:
             raise InstanceNotFound("Team with the provided uuid doesn't exist")
         return instance
@@ -180,10 +180,12 @@ class TeamRegularEventListView(generics.ListCreateAPIView):
     def post(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         data: dict = request.data
         associated_team: Team = self.get_object()
-        data["team"] = associated_team.id
-        serializer = self.get_serializer(data)
-        if serializer.is_valid(raises_exception=True):
-            serializer.save(uuid=TeamRegularEventService.generate_r_event_uuid())
+        serializer = self.get_serializer(data=data)
+        if serializer.is_valid(raise_exception=True):
+            serializer.save(
+                uuid=TeamRegularEventService.generate_r_event_uuid(),
+                team_id=associated_team.id,
+            )
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
@@ -217,7 +219,7 @@ class TeamRegularEventDetailView(generics.RetrieveUpdateDestroyAPIView):
         return self.queryset.filter(uuid=self.kwargs.get("uuid")).first()
 
     @swagger_auto_schema(
-        operation_summary="Create regular event for a team",
+        operation_summary="Update regular event for a team",
         responses={
             200: openapi.Response("Success", TeamRegularEventSerializer),
             400: "Validation error",
@@ -270,7 +272,7 @@ class SubgroupListView(generics.ListCreateAPIView):
     def get_object(self) -> Team:
         # Get Team instance
         try:
-            instance = get_object_or_404(Team, id=self.kwargs.get("uuid"))
+            instance = get_object_or_404(Team, uuid=self.kwargs.get("uuid"))
         except Http404:
             raise InstanceNotFound("Team with the provided uuid doesn't exist")
         return instance
@@ -292,10 +294,9 @@ class SubgroupListView(generics.ListCreateAPIView):
     )
     def post(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         data: dict = request.data
-        data["team"] = self.get_object().id
-        serializer = self.get_serializer(data)
+        serializer = self.get_serializer(data=data)
         if serializer.is_valid(raise_exception=True):
-            serializer.save()
+            serializer.save(team_id=self.get_object().id)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 

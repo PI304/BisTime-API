@@ -62,13 +62,14 @@ class TeamRegularEventSerializer(serializers.ModelSerializer):
             "uuid",
             "team",
             "title",
-            "description" "day",
+            "description",
+            "day",
             "start_time",
             "end_time",
             "created_at",
             "updated_at",
         ]
-        read_only_fields = ["id", "uuid", "team", "created_at", "updated_at"]
+        read_only_fields = ["id", "uuid", "created_at", "updated_at"]
 
     def validate(self, data: dict) -> dict:
         """
@@ -87,7 +88,6 @@ class TeamRegularEventSerializer(serializers.ModelSerializer):
                 < 0
             ):
                 raise ValidationError("end_time should be larger than start_time")
-
         if data["day"] < 0 or data["day"] > 6:
             raise ValidationError("day should be between 0 and 6")
 
@@ -95,6 +95,8 @@ class TeamRegularEventSerializer(serializers.ModelSerializer):
 
 
 class SubgroupSerializer(serializers.ModelSerializer):
+    team = TeamSerializer(read_only=True)
+
     class Meta:
         model = SubGroup
         fields = ["id", "team", "name", "created_at", "updated_at"]
