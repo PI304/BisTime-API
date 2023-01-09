@@ -12,9 +12,6 @@ class TeamSerializer(serializers.ModelSerializer):
         source="get_security_question_display", read_only=True
     )
     subgroups = serializers.SerializerMethodField()
-    # security_question = (
-    #     serializers.StringRelatedField()
-    # )  # TODO: security question models
 
     class Meta:
         model = Team

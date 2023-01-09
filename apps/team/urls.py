@@ -7,6 +7,7 @@ from .views import (
     SubgroupListView,
     SubgroupDetailView,
     TeamAdminCodeVerificationView,
+    TeamAdminCodeResetView,
 )
 
 urlpatterns = [
@@ -16,6 +17,11 @@ urlpatterns = [
         "/<str:uuid>/admin/verify",
         TeamAdminCodeVerificationView.as_view(),
         name="code-verification",
+    ),
+    path(
+        "/<str:uuid>/admin/reset",
+        TeamAdminCodeResetView.as_view(),
+        name="code-reset",
     ),
     path(
         "/<str:uuid>/regular-events",
