@@ -8,22 +8,22 @@ class Team(TimeStampMixin):
     For team mode
     """
 
+    class SecurityQuestion(models.IntegerChoices):
+        HIGH_SCHOOL_TEACHER = 0, "고등학교 1학년 때의 수학 선생님의 성함은 무엇인가요?"
+        CUSTOM = 1, "직접 입력"
+
     id = models.BigAutoField(primary_key=True)
     uuid = models.CharField(
         max_length=23,
-        validators=[MinLengthValidator(23)],
         null=False,
         help_text="팀을 구분하거나, 팀 뷰 url 생성을 위한 uuid 문자열",
     )
     name = models.CharField(max_length=100, null=False)
-    admin_code = models.CharField(
-        max_length=6, validators=[MinLengthValidator(6)], null=False
-    )
-    security_question = models.ForeignKey(
-        "security_question.TeamSecurityQuestion",
-        on_delete=models.DO_NOTHING,
-        null=True,
-        related_name="team_security_question",
+    admin_code = models.CharField(max_length=6, null=False)
+    security_question = models.BigIntegerField(
+        null=False,
+        choices=SecurityQuestion.choices,
+        default=SecurityQuestion.HIGH_SCHOOL_TEACHER,
     )
     custom_security_question = models.CharField(max_length=200, null=True)
     security_answer = models.CharField(max_length=50, null=False)

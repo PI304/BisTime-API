@@ -1,3 +1,4 @@
+from django.http import Http404
 from django.shortcuts import get_list_or_404
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
@@ -7,10 +8,13 @@ from apps.team.models import Team, TeamRegularEvent, SubGroup
 
 
 class TeamSerializer(serializers.ModelSerializer):
+    security_question = serializers.CharField(
+        source="get_security_question_display", read_only=True
+    )
     subgroups = serializers.SerializerMethodField()
-    security_question = (
-        serializers.StringRelatedField()
-    )  # TODO: security question models
+    # security_question = (
+    #     serializers.StringRelatedField()
+    # )  # TODO: security question models
 
     class Meta:
         model = Team
@@ -18,6 +22,7 @@ class TeamSerializer(serializers.ModelSerializer):
             "id",
             "uuid",
             "name",
+            "subgroups",
             "admin_code",
             "security_question",
             "custom_security_question",
@@ -29,16 +34,22 @@ class TeamSerializer(serializers.ModelSerializer):
             "id",
             "uuid",
             "admin_code",
-            "security_question",
+            "subgroups",
             "custom_security_question",
-            "security_answer",
             "created_at",
             "updated_at",
         ]
 
     def get_subgroups(self, obj) -> list[str]:
-        subgroups: list[SubGroup] = get_list_or_404(SubGroup, team_id=obj.id)
-        return [s.name for s in subgroups]
+        subgroups: list[str] = []
+        try:
+            subgroup_instances: list[SubGroup] = get_list_or_404(
+                SubGroup, team_id=obj.id
+            )
+        except Http404:
+            return subgroups
+
+        return [s.name for s in subgroup_instances]
 
 
 class TeamRegularEventSerializer(serializers.ModelSerializer):

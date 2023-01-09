@@ -40,7 +40,7 @@ ALLOWED_HOSTS = [".ap-northeast-2.compute.amazonaws.com"]
 
 # Application definition
 
-BISTIME_APPS = ["apps.event", "apps.security_question", "apps.team"]
+BISTIME_APPS = ["apps.event", "apps.team"]
 
 THIRD_PARTY_APPS = [
     "rest_framework",
@@ -130,6 +130,8 @@ REST_FRAMEWORK = {
     # "DEFAULT_FILTER_BACKENDS": ("django_filters.rest_framework.DjangoFilterBackend",),
     "DATE_INPUT_FORMATS": ["iso-8601", "%Y-%m-%dT%H:%M:%S.%fZ"],
 }
+
+APPEND_SLASH = False
 
 
 # Database
