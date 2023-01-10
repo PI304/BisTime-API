@@ -1,10 +1,11 @@
 from django.http import Http404
-from django.shortcuts import get_list_or_404
+from django.shortcuts import get_list_or_404, get_object_or_404
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
 from apps.event.serializers import EventSerializer
 from apps.team.models import Team, TeamRegularEvent, SubGroup
+from config.exceptions import InstanceNotFound
 
 
 class TeamSerializer(serializers.ModelSerializer):
@@ -98,3 +99,24 @@ class SubgroupSerializer(serializers.ModelSerializer):
         model = SubGroup
         fields = ["id", "team", "name", "created_at", "updated_at"]
         read_only_fields = ["id", "team", "created_at", "updated_at"]
+
+
+class TeamMemberFixedScheduleSerializer(serializers.Serializer):
+    name = serializers.CharField(max_length=20, min_length=1)
+    subgroup = serializers.CharField(max_length=50, min_length=1)
+    schedule = serializers.ListField(min_length=7, max_length=7)
+
+    def validate_subgroup(self, value):
+        try:
+            subgroup = get_object_or_404(SubGroup, name=value)
+        except Http404:
+            raise InstanceNotFound("subgroup with the provided name does not exist")
+
+        return value
+
+    def validate_schedule(self, value):
+        for x in value:
+            if type(x) is not str:
+                raise ValidationError("schedule should contain string format children")
+
+        return value
