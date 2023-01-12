@@ -1,8 +1,8 @@
 from django.urls import path
 
 from apps.team.views.fixed_schedule_views import (
-    TeamMemberFixedScheduleListView,
-    TeamMemberFixedScheduleDetailView,
+    TeamMemberFixedScheduleGetView,
+    TeamMemberFixedScheduleCreateView,
 )
 from apps.team.views.views import (
     TeamCreateView,
@@ -35,14 +35,14 @@ urlpatterns = [
     ),
     path("/<str:uuid>/subgroups", SubgroupListView.as_view(), name="subgroup-create"),
     path(
-        "/<str:uuid>/fixed-schedules",
-        TeamMemberFixedScheduleListView.as_view(),
-        name="fixed-schedule-list",
+        "/fixed-schedules",
+        TeamMemberFixedScheduleCreateView.as_view(),
+        name="fixed-schedule-create",
     ),
     path(
-        "/fixed-schedules/<str:name>",
-        TeamMemberFixedScheduleDetailView.as_view(),
-        name="fixed-schedule-detail",
+        "/<str:uuid>/fixed-schedules",
+        TeamMemberFixedScheduleGetView.as_view(),
+        name="fixed-schedule-list",
     ),
     path(
         "/regular-events/<str:uuid>",
