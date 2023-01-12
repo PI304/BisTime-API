@@ -1,3 +1,5 @@
+from typing import List
+
 from django.http import Http404
 from django.shortcuts import get_list_or_404, get_object_or_404
 from rest_framework import serializers
@@ -5,6 +7,7 @@ from rest_framework.exceptions import ValidationError
 
 from apps.event.serializers import EventSerializer
 from apps.team.models import Team, TeamRegularEvent, SubGroup
+from apps.team.services import TeamMemberFixedScheduleService
 from config.exceptions import InstanceNotFound
 
 
@@ -104,7 +107,7 @@ class SubgroupSerializer(serializers.ModelSerializer):
 class TeamMemberFixedScheduleSerializer(serializers.Serializer):
     name = serializers.CharField(max_length=20, min_length=1)
     subgroup = serializers.CharField(max_length=50, min_length=1)
-    schedule = serializers.ListField(min_length=7, max_length=7)
+    week_schedule = serializers.ListField(min_length=7, max_length=7)
 
     def validate_subgroup(self, value):
         try:
@@ -120,3 +123,21 @@ class TeamMemberFixedScheduleSerializer(serializers.Serializer):
                 raise ValidationError("schedule should contain string format children")
 
         return value
+
+    def save(self, team_name: str):
+        schedule_bytes: List[bytearray] = []
+
+        for bytes_string in self.validated_data["schedule"]:
+            schedule_bytes.append(bytearray([int(x) for x in bytes_string]))
+
+        print(schedule_bytes)
+
+        bitmap_bytes: bytes = (
+            TeamMemberFixedScheduleService.create_schedule_bitmap_bytes(schedule_bytes)
+        )
+        TeamMemberFixedScheduleService.save_schedule(
+            bitmap_bytes,
+            team_name,
+            self.validated_data["name"],
+            self.validated_data["subgroup"],
+        )
