@@ -1,7 +1,8 @@
 import os
 
 from botocore.exceptions import ClientError
-from django.shortcuts import get_list_or_404
+from django.http import Http404
+from django.shortcuts import get_list_or_404, get_object_or_404
 from dotenv import load_dotenv
 from io import BytesIO
 from typing import Union, List
@@ -12,7 +13,7 @@ from PIL import Image
 from rest_framework.request import Request
 
 from apps.event.services import EventService
-from apps.team.models import Team, TeamRegularEvent, SubGroup
+from apps.team.models import Team, TeamRegularEvent, SubGroup, TeamMember
 from config import s3_config
 from config.exceptions import InstanceNotFound
 
@@ -54,7 +55,7 @@ class S3ImagesUploadFailed(Exception):
     pass
 
 
-class TeamMemberFixedScheduleService(object):
+class TeamMemberService(object):
 
     bucket_name = os.environ.get("S3_BUCKET_NAME")
 
@@ -72,9 +73,7 @@ class TeamMemberFixedScheduleService(object):
         return bitmap
 
     @staticmethod
-    def save_schedule(
-        bitmap: PIL.Image.Image, team: str, name: str, subgroup: str = "default"
-    ) -> bool:
+    def save_schedule(bitmap: PIL.Image.Image, team: str, name: str) -> bool:
         s3 = s3_config.s3_connection()
 
         buffer = BytesIO()
@@ -83,8 +82,8 @@ class TeamMemberFixedScheduleService(object):
 
         sent_data = s3.put_object(
             Body=buffer,
-            Bucket=TeamMemberFixedScheduleService.bucket_name,
-            Key=f"Teams/{team}/{subgroup}/{name}.xbm",
+            Bucket=TeamMemberService.bucket_name,
+            Key=f"Teams/{team}/{name}.xbm",
         )
         if sent_data["ResponseMetadata"]["HTTPStatusCode"] != 200:
             raise S3ImagesUploadFailed("Failed to upload image to bucket")
@@ -97,9 +96,7 @@ class TeamMemberFixedScheduleService(object):
             yield target_list[i : i + size]
 
     @staticmethod
-    def get_member_schedule(
-        team: str, name: str, subgroup: str = "default", s3_connection=None
-    ):
+    def get_member_schedule(team: str, name: str, s3_connection=None):
 
         if s3_connection:
             s3 = s3_connection
@@ -108,8 +105,8 @@ class TeamMemberFixedScheduleService(object):
 
         try:
             file_byte_string = s3.get_object(
-                Bucket=TeamMemberFixedScheduleService.bucket_name,
-                Key=f"Teams/{team}/{subgroup}/{name}.xbm",
+                Bucket=TeamMemberService.bucket_name,
+                Key=f"Teams/{team}/{name}.xbm",
             )["Body"].read()
         except ClientError:
             raise InstanceNotFound(
@@ -119,59 +116,48 @@ class TeamMemberFixedScheduleService(object):
         img = Image.open(BytesIO(file_byte_string))
         pixel_map = [int(x / 255) for x in list(img.getdata())]
 
-        return list(TeamMemberFixedScheduleService.__list_chunker(pixel_map, 48))
+        return list(TeamMemberService.__list_chunker(pixel_map, 48))
 
     @staticmethod
-    def get_all_member_schedules(team: str):
-        s3 = s3_config.s3_connection()
+    def __get_schedules(team_name: str, members: List[TeamMember], s3_connection=None):
+        if not s3_connection:
+            s3 = s3_config.s3_connection()
+        else:
+            s3 = s3_connection
 
         schedules = []
-
-        objects = s3.list_objects_v2(
-            Bucket=TeamMemberFixedScheduleService.bucket_name, Prefix=f"Teams/{team}/"
-        )
-
-        for obj in objects["Contents"]:
-            if obj["Key"].endswith(".xbm"):
-                subgroup = obj["Key"].split("/")[2]
-                name = obj["Key"].split("/")[3].split(".")[0]
-
-                data = {
-                    "name": name,
-                    "subgroup": subgroup,
-                    "week_schedule": TeamMemberFixedScheduleService.get_member_schedule(
-                        team, name=name, subgroup=subgroup, s3_connection=s3
-                    ),
-                }
-                schedules.append(data)
+        for m in members:
+            data = {
+                "name": m.name,
+                "subgroup": m.subgroup.name,
+                "week_schedule": TeamMemberService.get_member_schedule(
+                    team_name, name=m.name, s3_connection=s3
+                ),
+            }
+            schedules.append(data)
 
         return schedules
 
     @staticmethod
-    def get_subgroup_schedules(team: str, subgroup: str):
-        s3 = s3_config.s3_connection()
+    def get_all_member_schedules(team_name: str):
+        members = get_list_or_404(TeamMember, team__name=team_name)
+        return TeamMemberService.__get_schedules(team_name, members)
 
-        schedules = []
+    @staticmethod
+    def get_subgroup_schedules(team_name: str, subgroup: str):
 
-        objects = s3.list_objects_v2(
-            Bucket=TeamMemberFixedScheduleService.bucket_name,
-            Prefix=f"Teams/{team}/{subgroup}/",
+        try:
+            subgroup_instance = get_object_or_404(SubGroup, name=subgroup)
+        except Http404:
+            raise InstanceNotFound(
+                "subgroup with the provided name does not exist in the team"
+            )
+
+        members = get_list_or_404(
+            TeamMember, subgroup__name=subgroup_instance.name, team__name=team_name
         )
 
-        for obj in objects["Contents"]:
-            if obj["Key"].endswith(".xbm"):
-                name = obj["Key"].split("/")[3].split(".")[0]
-
-                data = {
-                    "name": name,
-                    "subgroup": subgroup,
-                    "week_schedule": TeamMemberFixedScheduleService.get_member_schedule(
-                        team, name=name, subgroup=subgroup, s3_connection=s3
-                    ),
-                }
-                schedules.append(data)
-
-        return schedules
+        return TeamMemberService.__get_schedules(team_name, members)
 
     @staticmethod
     def delete_schedule():
