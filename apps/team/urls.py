@@ -1,8 +1,9 @@
 from django.urls import path
 
-from apps.team.views.fixed_schedule_views import (
-    TeamMemberFixedScheduleGetView,
-    TeamMemberFixedScheduleCreateView,
+from apps.team.views.member_views import (
+    TeamMemberCreateView,
+    TeamMemberListView,
+    TeamMemberDetailView,
 )
 from apps.team.views.views import (
     TeamCreateView,
@@ -17,6 +18,16 @@ from apps.team.views.views import (
 
 urlpatterns = [
     path("/", TeamCreateView.as_view(), name="team-create"),
+    path(
+        "/members",
+        TeamMemberCreateView.as_view(),
+        name="create-member",
+    ),
+    path(
+        "/members/<int:pk>",
+        TeamMemberDetailView.as_view(),
+        name="create-member",
+    ),
     path("/<str:uuid>", TeamDetailView.as_view(), name="team-detail"),
     path(
         "/<str:uuid>/admin/verify",
@@ -35,14 +46,9 @@ urlpatterns = [
     ),
     path("/<str:uuid>/subgroups", SubgroupListView.as_view(), name="subgroup-create"),
     path(
-        "/fixed-schedules",
-        TeamMemberFixedScheduleCreateView.as_view(),
-        name="fixed-schedule-create",
-    ),
-    path(
-        "/<str:uuid>/fixed-schedules",
-        TeamMemberFixedScheduleGetView.as_view(),
-        name="fixed-schedule-list",
+        "/<str:uuid>/members",
+        TeamMemberListView.as_view(),
+        name="member-list",
     ),
     path(
         "/regular-events/<str:uuid>",
