@@ -1,10 +1,8 @@
-import json
 from datetime import datetime
-from pytz import timezone
-from rest_framework.relations import PrimaryKeyRelatedField
+
+from django.utils import timezone
 
 from apps.event.services import EventService
-from config.settings.base import TIME_ZONE
 
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
@@ -100,7 +98,7 @@ class EventDateSerializer(serializers.ModelSerializer):
         """
         Check if date is of future value
         """
-        if value <= datetime.now(timezone(TIME_ZONE)).date():
+        if value <= timezone.now():
             raise ValidationError("should be a future date")
 
         return value

@@ -3,6 +3,7 @@ from typing import Any
 
 from django.http import Http404
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from django.utils.decorators import method_decorator
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
@@ -100,7 +101,7 @@ class TeamDetailView(generics.RetrieveUpdateDestroyAPIView):
         ),
     )
     def perform_update(self, serializer):
-        serializer.save(updated_at=datetime.now())
+        serializer.save(updated_at=timezone.now())
 
     @swagger_auto_schema(
         operation_summary="Delete team",
@@ -247,7 +248,7 @@ class TeamRegularEventDetailView(generics.RetrieveUpdateDestroyAPIView):
         ),
     )
     def perform_update(self, serializer):
-        serializer.save(updated_at=datetime.now())
+        serializer.save(updated_at=timezone.now())
 
 
 @method_decorator(
@@ -306,8 +307,7 @@ class SubgroupDetailView(generics.RetrieveUpdateDestroyAPIView):
     allowed_methods = ["PATCH", "GET", "DELETE"]
 
     def perform_update(self, serializer):
-        serializer.save(updated_at=datetime.now())
-        # TODO: change s3 directory name
+        serializer.save(updated_at=timezone.now())
 
     def perform_destroy(self, instance):
         instance.delete()
@@ -363,7 +363,7 @@ class TeamAdminCodeResetView(APIView):
             raise AuthenticationFailed("Wrong answer for security question")
         else:
             instance.admin_code = TeamService.generate_admin_code()
-            instance.updated_at = datetime.now()
+            instance.updated_at = timezone.now()
             instance.save(update_fields=["admin_code", "updated_at"])
 
             return Response(TeamSerializer(instance).data, status=status.HTTP_200_OK)
