@@ -15,7 +15,7 @@ from rest_framework.request import Request
 from apps.event.services import EventService
 from apps.team.models import Team, TeamRegularEvent, SubGroup, TeamMember
 from config import s3_config
-from config.exceptions import InstanceNotFound
+from config.exceptions import InstanceNotFound, S3ImagesUploadFailed
 
 load_dotenv()
 
@@ -51,10 +51,6 @@ class SubGroupService:
         pass
 
 
-class S3ImagesUploadFailed(Exception):
-    pass
-
-
 class TeamMemberService(object):
 
     bucket_name = os.environ.get("S3_BUCKET_NAME")
@@ -86,7 +82,7 @@ class TeamMemberService(object):
             Key=f"Teams/{team}/{name}.xbm",
         )
         if sent_data["ResponseMetadata"]["HTTPStatusCode"] != 200:
-            raise S3ImagesUploadFailed("Failed to upload image to bucket")
+            raise S3ImagesUploadFailed()
 
         return True
 
