@@ -95,7 +95,7 @@ class TeamMember(TimeStampMixin):
     id = models.BigAutoField(primary_key=True)
     name = models.CharField(max_length=20, null=False, blank=False)
     team = models.ForeignKey(Team, on_delete=models.CASCADE)
-    subgroup = models.ForeignKey(SubGroup, on_delete=models.DO_NOTHING, null=True)
+    subgroup = models.ForeignKey(SubGroup, on_delete=models.CASCADE, null=True)
 
     class Meta:
         db_table = "team_member"
