@@ -1,5 +1,9 @@
 from django.urls import path
 
+from apps.team.views.admin_views import (
+    TeamAdminCodeVerificationView,
+    TeamAdminCodeResetView,
+)
 from apps.team.views.member_views import (
     TeamMemberCreateView,
     TeamMemberListView,
@@ -12,12 +16,10 @@ from apps.team.views.views import (
     TeamRegularEventDetailView,
     SubgroupListView,
     SubgroupDetailView,
-    TeamAdminCodeVerificationView,
-    TeamAdminCodeResetView,
 )
 
 urlpatterns = [
-    path("/", TeamCreateView.as_view(), name="team-create"),
+    path("", TeamCreateView.as_view(), name="team-create"),
     path(
         "/members",
         TeamMemberCreateView.as_view(),

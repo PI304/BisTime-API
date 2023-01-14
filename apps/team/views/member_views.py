@@ -23,6 +23,7 @@ class TeamMemberCreateView(generics.CreateAPIView):
 
     @swagger_auto_schema(
         operation_summary="Add a team member",
+        tags=["team-members"],
         responses={
             201: openapi.Response("Success", TeamMemberSerializer),
             400: "Validation error",
@@ -83,9 +84,9 @@ class TeamMemberCreateView(generics.CreateAPIView):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
-class TeamMemberListView(generics.ListAPIView, generics.DestroyAPIView):
+class TeamMemberListView(generics.ListAPIView):
     queryset = Team.objects.all()
-    allowed_methods = ["GET", "DELETE"]
+    allowed_methods = ["GET"]
     paginator = None
 
     name_param = openapi.Parameter(
@@ -102,6 +103,7 @@ class TeamMemberListView(generics.ListAPIView, generics.DestroyAPIView):
         return self.queryset.filter(uuid=self.kwargs.get("uuid")).first()
 
     @swagger_auto_schema(
+        tags=["team-members"],
         operation_summary="Get schedules",
         operation_description="name 쿼리스트링을 통해 특정 멤버의 스케줄을 조회하거나 subgroup 쿼리스트링을 통해 팀 내 특정 서브그룹에 속해있는 모든 멤버들의 스케줄을 "
         "조회함. 쿼리스트링이 없으면 팀 전체 멤버의 스케줄 조회",
@@ -150,6 +152,7 @@ class TeamMemberListView(generics.ListAPIView, generics.DestroyAPIView):
 @method_decorator(
     name="patch",
     decorator=swagger_auto_schema(
+        tags=["team-members"],
         operation_summary="Update team member's subgroup",
         operation_description="스케줄 초기화시에도 해당 엔드포인트 사용 (모두 1로 초기화)",
         responses={
@@ -177,6 +180,7 @@ class TeamMemberListView(generics.ListAPIView, generics.DestroyAPIView):
 @method_decorator(
     name="delete",
     decorator=swagger_auto_schema(
+        tags=["team-members"],
         operation_summary="Delete a team member and its schedule",
         operation_description="스케줄 초기화하고 싶은 경우 patch method 이용",
         responses={
