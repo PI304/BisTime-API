@@ -41,6 +41,18 @@ class S3ImagesUploadFailed(APIException):
             self.detail = detail
 
 
+class InternalServerError(APIException):
+    status_code = 500
+    default_detail = "Something went wrong"
+    default_code = "server_error"
+
+    def __init__(self, detail=None):
+        if detail is None:
+            self.detail = self.default_detail
+        else:
+            self.detail = detail
+
+
 def custom_exception_handler(exc, context):
     # Call REST framework's default exception handler first,
     # to get the standard error response.
