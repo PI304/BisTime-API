@@ -1,9 +1,10 @@
-from datetime import datetime, date
+from datetime import date
 from typing import Any, List
 from django.http import Http404
 from django.shortcuts import get_object_or_404, get_list_or_404
 from django.utils import timezone
 from django.utils.decorators import method_decorator
+from django_filters.rest_framework import DjangoFilterBackend
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 
@@ -19,7 +20,11 @@ from apps.event.serializers import (
     ScheduleSerializer,
 )
 from apps.event.services import EventService, EventDateService
-from config.exceptions import InstanceNotFound, DuplicateInstance
+from config.exceptions import InstanceNotFound
+
+name_param = openapi.Parameter(
+    "name", openapi.IN_QUERY, description="팀원 이름", type=openapi.TYPE_STRING
+)
 
 
 @method_decorator(
@@ -66,30 +71,35 @@ class EventView(generics.ListCreateAPIView):
 
 
 @method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_summary="Get an event",
+        responses={
+            200: openapi.Response("Success", EventDateSerializer),
+            404: "Not found",
+        },
+    ),
+)
+@method_decorator(
     name="delete",
     decorator=swagger_auto_schema(
         operation_summary="Delete an event",
         operation_description="[Warning] Cascading deletion for all related dates and schedules",
-        responses={200: openapi.Response("Success", EventDateSerializer)},
+        responses={
+            200: openapi.Response("Success", EventDateSerializer),
+            404: "Not found",
+        },
     ),
 )
-class EventDetailView(generics.RetrieveUpdateDestroyAPIView):
-    serializer_class = EventSerializer
-    queryset = Event.objects.all()
-    allowed_methods = ["GET", "PATCH", "DELETE"]
-
-    def get_queryset(self):
-        return self.queryset.filter(uuid=self.kwargs.get("uuid"))
-
-    def get_object(self):
-        return self.get_queryset().first()
-
-    @swagger_auto_schema(
+@method_decorator(
+    name="patch",
+    decorator=swagger_auto_schema(
         operation_summary="Update an instant event",
         operation_description="only updates start_time, end_time",
         responses={
             200: openapi.Response("Success", EventSerializer),
             400: "Validation error",
+            404: "Not found",
         },
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
@@ -105,7 +115,19 @@ class EventDetailView(generics.RetrieveUpdateDestroyAPIView):
                 ),
             },
         ),
-    )
+    ),
+)
+class EventDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = EventSerializer
+    queryset = Event.objects.all()
+    allowed_methods = ["GET", "PATCH", "DELETE"]
+
+    def get_queryset(self):
+        return self.queryset.filter(uuid=self.kwargs.get("uuid"))
+
+    def get_object(self):
+        return self.get_queryset().first()
+
     def perform_update(self, serializer):
         serializer.save(updated_at=timezone.now())
 
@@ -197,15 +219,17 @@ class EventDateDestroyView(generics.DestroyAPIView):
     name="get",
     decorator=swagger_auto_schema(
         operation_summary="Get all schedule data associated with a single instant event",
+        tags=["schedules"],
         responses={200: openapi.Response("Success", ScheduleSerializer)},
+        manual_parameters=[name_param],
     ),
 )
 class ScheduleView(generics.ListCreateAPIView, generics.UpdateAPIView):
     serializer_class = ScheduleSerializer
     queryset = Schedule.objects.all().order_by("event", "date__date")
     allowed_methods = ["GET", "POST", "PATCH"]
-    filter_backends = [filters.SearchFilter]
-    search_fields = ["name"]
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ["name"]
 
     def get_queryset(self):
         qs = self.queryset.filter(event__uuid=self.kwargs.get("uuid"))
@@ -213,6 +237,7 @@ class ScheduleView(generics.ListCreateAPIView, generics.UpdateAPIView):
 
     @swagger_auto_schema(
         operation_summary="Add user's schedule to an event for all dates",
+        tags=["schedules"],
         operation_description="overrides existing schedules",
         responses={201: openapi.Response("Success", ScheduleSerializer)},
         request_body=openapi.Schema(
@@ -289,6 +314,7 @@ class ScheduleView(generics.ListCreateAPIView, generics.UpdateAPIView):
         return Response(schedules, status=status.HTTP_201_CREATED)
 
     @swagger_auto_schema(
+        tags=["schedules"],
         operation_summary="Update a member's schedule by date associated with an event",
         operation_description="Overrides existing availability if data entry exists",
         responses={
@@ -358,34 +384,20 @@ class ScheduleView(generics.ListCreateAPIView, generics.UpdateAPIView):
             raise InstanceNotFound("Provided date does not exist for this event")
 
 
-@method_decorator(
-    name="get",
-    decorator=swagger_auto_schema(
-        operation_summary="Get user's schedule data associated with a single instant event",
-        operation_description="use query string 'name' to search against a certain user",
-        responses={200: openapi.Response("Success", ScheduleSerializer)},
-    ),
-)
-class UserScheduleView(generics.ListAPIView, generics.DestroyAPIView):
+class ScheduleDestroyView(generics.DestroyAPIView):
     serializer_class = ScheduleSerializer
-    queryset = Schedule.objects.all().order_by("date__date")
-    filter_backends = [filters.SearchFilter]
-    search_fields = ["name"]
-    allowed_methods = ["GET", "DELETE"]
+    queryset = Schedule.objects.all()
+    allowed_methods = ["DELETE"]
 
     def get_queryset(self):
-        name = self.request.GET.get("name")
-        qs = self.queryset.filter(event__uuid=self.kwargs.get("uuid"), name=name)
-        return qs
-
-    def get_objects(self) -> List[Schedule]:
-        return Schedule.objects.filter(
+        return self.queryset.filter(
             event__uuid=self.kwargs.get("uuid"), name=self.kwargs.get("name")
         )
 
     @swagger_auto_schema(
         operation_summary="Destroys all schedules associated with a name",
         responses={204: "No content"},
+        tags=["schedules"],
     )
     def delete(self, request: Request, *args: Any, **kwargs) -> Response:
         self.get_queryset().delete()
