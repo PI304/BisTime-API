@@ -6,7 +6,7 @@ from django.utils import timezone
 from django.utils.decorators import method_decorator
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
-from rest_framework import generics, status, mixins
+from rest_framework import generics, status
 from rest_framework.exceptions import ValidationError
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -151,8 +151,9 @@ class TeamMemberListView(generics.ListAPIView, generics.DestroyAPIView):
     name="patch",
     decorator=swagger_auto_schema(
         operation_summary="Update team member's subgroup",
+        operation_description="스케줄 초기화시에도 해당 엔드포인트 사용 (모두 1로 초기화)",
         responses={
-            201: openapi.Response("Success", TeamMemberSerializer),
+            200: openapi.Response("Success", TeamMemberSerializer),
             400: "Validation error",
             404: "Not found",
         },
@@ -173,10 +174,24 @@ class TeamMemberListView(generics.ListAPIView, generics.DestroyAPIView):
         ),
     ),
 )
-class TeamMemberDetailView(generics.UpdateAPIView, mixins.DestroyModelMixin):
+@method_decorator(
+    name="delete",
+    decorator=swagger_auto_schema(
+        operation_summary="Delete a team member and its schedule",
+        operation_description="스케줄 초기화하고 싶은 경우 patch method 이용",
+        responses={
+            200: openapi.Response("Success", TeamMemberSerializer),
+            404: "Not found",
+        },
+    ),
+)
+class TeamMemberDetailView(generics.UpdateAPIView, generics.DestroyAPIView):
     queryset = TeamMember.objects.all()
     allowed_methods = ["PATCH", "DELETE"]
     serializer_class = TeamMemberSerializer
+
+    def get_queryset(self):
+        return self.queryset.filter(id=self.kwargs.get("pk"))
 
     def update(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         instance = self.get_object()
@@ -196,8 +211,8 @@ class TeamMemberDetailView(generics.UpdateAPIView, mixins.DestroyModelMixin):
 
         return Response(data, status=status.HTTP_200_OK)
 
-    def destroy(self, request, *args, **kwargs):
+    def destroy(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         instance = self.get_object()
         self.perform_destroy(instance)
-        TeamMemberService.delete_schedule()
-        return Response(instance, status=status.HTTP_200_OK)
+        TeamMemberService.delete_schedule(instance.team.name, name=kwargs.get("name"))
+        return Response(self.get_serializer(instance).data, status=status.HTTP_200_OK)

@@ -26,7 +26,7 @@ urlpatterns = [
     path(
         "/members/<int:pk>",
         TeamMemberDetailView.as_view(),
-        name="create-member",
+        name="member-detail",
     ),
     path("/<str:uuid>", TeamDetailView.as_view(), name="team-detail"),
     path(
