@@ -16,7 +16,7 @@ from apps.team.serializers import (
     TeamRegularEventSerializer,
     SubgroupSerializer,
 )
-from apps.team.services import TeamService, TeamRegularEventService
+from apps.team.services import TeamService, TeamRegularEventService, TeamMemberService
 from config.exceptions import InstanceNotFound
 
 
@@ -121,8 +121,8 @@ class TeamDetailView(generics.RetrieveUpdateDestroyAPIView):
         serializer.save(updated_at=timezone.now())
 
     def perform_destroy(self, instance):
+        TeamMemberService.delete_schedule(instance.name)
         instance.delete()
-        # TODO: cascading deletion of all schedules in s3
 
 
 @method_decorator(
@@ -366,5 +366,5 @@ class SubgroupDetailView(generics.RetrieveUpdateDestroyAPIView):
         serializer.save(updated_at=timezone.now())
 
     def perform_destroy(self, instance):
+        TeamMemberService.delete_schedule(instance.team.name, subgroup=instance.name)
         instance.delete()
-        # TODO: remove s3 bucket bitmaps under this subgroup

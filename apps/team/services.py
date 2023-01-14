@@ -167,9 +167,8 @@ class TeamMemberService(object):
             bucket = s3_bucket
         try:
             res = bucket.object_versions.filter(Prefix=object_key).delete()
-            print(
-                f"Permanently deleted all versions of object {object_key}: {len(res[0]['Deleted'])} deleted"
-            )
+            print(res)
+            print(f"Permanently deleted all versions of object {object_key}")
         except ClientError as e:
             print(e)
             raise InternalServerError(e.MSG_TEMPLATE)
@@ -181,14 +180,14 @@ class TeamMemberService(object):
         s3_bucket = s3_config.s3_bucket()
 
         if subgroup:
+            print(team_name, subgroup)
             try:
                 members = get_list_or_404(
                     TeamMember, team__name=team_name, subgroup__name=subgroup
                 )
             except Http404:
-                raise InstanceNotFound(
-                    "members with the provided team or subgroup name do not exist"
-                )
+                print("no member schedules to delete from s3")
+                return
 
             for m in members:
                 object_key = f"Teams/{team_name}/{name}.xbm"
