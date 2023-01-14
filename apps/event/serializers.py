@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, date
 
 from django.utils import timezone
 
@@ -98,7 +98,7 @@ class EventDateSerializer(serializers.ModelSerializer):
         """
         Check if date is of future value
         """
-        if value <= timezone.now():
+        if value <= date.today():
             raise ValidationError("should be a future date")
 
         return value
