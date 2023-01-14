@@ -1,5 +1,11 @@
-from django.urls import path, include
-from .views import (
+from django.urls import path
+
+from apps.team.views.member_views import (
+    TeamMemberCreateView,
+    TeamMemberListView,
+    TeamMemberDetailView,
+)
+from apps.team.views.views import (
     TeamCreateView,
     TeamDetailView,
     TeamRegularEventListView,
@@ -12,6 +18,16 @@ from .views import (
 
 urlpatterns = [
     path("/", TeamCreateView.as_view(), name="team-create"),
+    path(
+        "/members",
+        TeamMemberCreateView.as_view(),
+        name="create-member",
+    ),
+    path(
+        "/members/<int:pk>",
+        TeamMemberDetailView.as_view(),
+        name="member-detail",
+    ),
     path("/<str:uuid>", TeamDetailView.as_view(), name="team-detail"),
     path(
         "/<str:uuid>/admin/verify",
@@ -28,12 +44,17 @@ urlpatterns = [
         TeamRegularEventListView.as_view(),
         name="team-events-list",
     ),
+    path("/<str:uuid>/subgroups", SubgroupListView.as_view(), name="subgroup-create"),
+    path(
+        "/<str:uuid>/members",
+        TeamMemberListView.as_view(),
+        name="member-list",
+    ),
     path(
         "/regular-events/<str:uuid>",
         TeamRegularEventDetailView.as_view(),
         name="team-events-detail",
     ),
-    path("/<str:uuid>/subgroups", SubgroupListView.as_view(), name="subgroups-create"),
     path(
         "/subgroups/<int:pk>",
         SubgroupDetailView.as_view(),

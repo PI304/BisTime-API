@@ -2,6 +2,7 @@ from datetime import datetime, date
 from typing import Any, List
 from django.http import Http404
 from django.shortcuts import get_object_or_404, get_list_or_404
+from django.utils import timezone
 from django.utils.decorators import method_decorator
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
@@ -106,7 +107,7 @@ class EventDetailView(generics.RetrieveUpdateDestroyAPIView):
         ),
     )
     def perform_update(self, serializer):
-        serializer.save(updated_at=datetime.now())
+        serializer.save(updated_at=timezone.now())
 
 
 @method_decorator(
@@ -272,7 +273,7 @@ class ScheduleView(generics.ListCreateAPIView, generics.UpdateAPIView):
                     partial=True,
                 )
                 if serializer.is_valid(raise_exception=True):
-                    serializer.save(updated_at=datetime.now())
+                    serializer.save(updated_at=timezone.now())
                 schedules.append(serializer.data)
             except Http404:
                 # instance 없을 때 -> 새로 생성
@@ -339,7 +340,7 @@ class ScheduleView(generics.ListCreateAPIView, generics.UpdateAPIView):
                     existing_schedule, data=data, partial=True
                 )
                 if serializer.is_valid(raise_exception=True):
-                    serializer.save(updated_at=datetime.now())
+                    serializer.save(updated_at=timezone.now())
 
                 return Response(serializer.data, status=status.HTTP_200_OK)
             except Http404 as e:

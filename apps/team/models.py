@@ -89,3 +89,19 @@ class SubGroup(TimeStampMixin):
 
     def __repr__(self) -> str:
         return f"SubGroup({self.id}, {self.team}, {self.name})"
+
+
+class TeamMember(TimeStampMixin):
+    id = models.BigAutoField(primary_key=True)
+    name = models.CharField(max_length=20, null=False, blank=False)
+    team = models.ForeignKey(Team, on_delete=models.CASCADE)
+    subgroup = models.ForeignKey(SubGroup, on_delete=models.DO_NOTHING, null=True)
+
+    class Meta:
+        db_table = "team_member"
+
+    def __str__(self) -> str:
+        return f"[{self.id}] {self.name} (team_id: {self.team_id}"
+
+    def __repr__(self) -> str:
+        return f"TeamMember({self.id}, {self.name}, {self.team})"
