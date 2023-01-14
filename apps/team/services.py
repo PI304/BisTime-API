@@ -15,7 +15,11 @@ from rest_framework.request import Request
 from apps.event.services import EventService
 from apps.team.models import Team, TeamRegularEvent, SubGroup, TeamMember
 from config import s3_config
-from config.exceptions import InstanceNotFound, S3ImagesUploadFailed
+from config.exceptions import (
+    InstanceNotFound,
+    S3ImagesUploadFailed,
+    InternalServerError,
+)
 
 load_dotenv()
 
@@ -70,7 +74,7 @@ class TeamMemberService(object):
 
     @staticmethod
     def save_schedule(bitmap: PIL.Image.Image, team: str, name: str) -> bool:
-        s3 = s3_config.s3_connection()
+        s3 = s3_config.s3_client_connection()
 
         buffer = BytesIO()
         bitmap.save(buffer, "XBM")
@@ -97,7 +101,7 @@ class TeamMemberService(object):
         if s3_connection:
             s3 = s3_connection
         else:
-            s3 = s3_config.s3_connection()
+            s3 = s3_config.s3_client_connection()
 
         try:
             file_byte_string = s3.get_object(
@@ -117,7 +121,7 @@ class TeamMemberService(object):
     @staticmethod
     def __get_schedules(team_name: str, members: List[TeamMember], s3_connection=None):
         if not s3_connection:
-            s3 = s3_config.s3_connection()
+            s3 = s3_config.s3_client_connection()
         else:
             s3 = s3_connection
 
@@ -156,5 +160,46 @@ class TeamMemberService(object):
         return TeamMemberService.__get_schedules(team_name, members)
 
     @staticmethod
-    def delete_schedule():
-        pass
+    def __delete_all_object_versions(object_key: str, s3_bucket=None):
+        if not s3_bucket:
+            bucket = s3_config.s3_bucket()
+        else:
+            bucket = s3_bucket
+        try:
+            res = bucket.object_versions.filter(Prefix=object_key).delete()
+            print(
+                f"Permanently deleted all versions of object {object_key}: {len(res[0]['Deleted'])} deleted"
+            )
+        except ClientError as e:
+            print(e)
+            raise InternalServerError(e.MSG_TEMPLATE)
+
+    @staticmethod
+    def delete_schedule(
+        team_name: str, subgroup: Union[str, None] = None, name: Union[str, None] = None
+    ):
+        s3_bucket = s3_config.s3_bucket()
+
+        if subgroup:
+            try:
+                members = get_list_or_404(
+                    TeamMember, team__name=team_name, subgroup__name=subgroup
+                )
+            except Http404:
+                raise InstanceNotFound(
+                    "members with the provided team or subgroup name do not exist"
+                )
+
+            for m in members:
+                object_key = f"Teams/{team_name}/{name}.xbm"
+                TeamMemberService.__delete_all_object_versions(object_key, s3_bucket)
+
+        elif not subgroup and name:
+            # 한명의 스케줄 삭제
+            object_key = f"Teams/{team_name}/{name}.xbm"
+            TeamMemberService.__delete_all_object_versions(object_key, s3_bucket)
+
+        elif not subgroup and not name:
+            # 팀 삭제
+            object_key = f"Teams/{team_name}"
+            TeamMemberService.__delete_all_object_versions(object_key, s3_bucket)
