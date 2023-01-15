@@ -57,12 +57,14 @@ class EventService(object):
                 schedules = get_list_or_404(
                     Schedule, event_id=self.event.id, date_id=date.id
                 )
+                for s in schedules:
+                    availabilities = [
+                        x + y for x, y in zip(availabilities, list(s.availability))
+                    ]
+
             except Http404:
-                continue
-            for s in schedules:
-                availabilities = [
-                    x + y for x, y in zip(availabilities, list(s.availability))
-                ]
+                pass
+
             availability_obj[str(date.date)] = availabilities
 
         return availability_obj
