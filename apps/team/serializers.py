@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Dict
 
 from django.http import Http404
 from django.shortcuts import get_list_or_404, get_object_or_404
@@ -9,6 +9,7 @@ from apps.event.serializers import EventSerializer
 from apps.team.models import Team, TeamRegularEvent, SubGroup, TeamMember
 from apps.team.services import TeamMemberService
 from config.exceptions import InstanceNotFound
+from config.mixins import TimeBlockMixin
 
 
 class TeamSerializer(serializers.ModelSerializer):
@@ -51,6 +52,12 @@ class TeamSerializer(serializers.ModelSerializer):
             return subgroups
 
         return [s.name for s in subgroup_instances]
+
+    def validate(self, data: Dict) -> Dict:
+        TimeBlockMixin.validate_time_data(data)
+
+        # TODO: validate security question index number
+        return data
 
 
 class TeamRegularEventSerializer(serializers.ModelSerializer):
@@ -163,6 +170,7 @@ class TeamMemberSerializer(serializers.ModelSerializer):
 
 class WeekScheduleSerializer(serializers.Serializer):
     team = TeamUUIDField()
+    # TODO: add subgroup
     name = serializers.CharField(max_length=20)
     week_schedule = serializers.ListField(min_length=7, max_length=7)
 
