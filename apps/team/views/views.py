@@ -37,7 +37,7 @@ class TeamView(generics.ListCreateAPIView):
         },
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
-            required=["name", "securityAnswer"],
+            required=["name", "securityAnswer", "startTime", "endTime"],
             properties={
                 "name": openapi.Schema(type=openapi.TYPE_STRING, description="팀 이름"),
                 "securityQuestion": openapi.Schema(
@@ -48,6 +48,12 @@ class TeamView(generics.ListCreateAPIView):
                 ),
                 "securityAnswer": openapi.Schema(
                     type=openapi.TYPE_STRING, description="보안 질문 정답"
+                ),
+                "startTime": openapi.Schema(
+                    type=openapi.TYPE_STRING, description="팀의 워크아워 시작 시간"
+                ),
+                "endTime": openapi.Schema(
+                    type=openapi.TYPE_STRING, description="팀의 워크아워 종료 시간"
                 ),
             },
         ),
