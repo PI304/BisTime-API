@@ -18,7 +18,7 @@ class Team(TimeStampMixin):
         null=False,
         help_text="팀을 구분하거나, 팀 뷰 url 생성을 위한 uuid 문자열",
     )
-    name = models.CharField(max_length=100, null=False)
+    name = models.CharField(max_length=100, null=False, unique=True)
     admin_code = models.CharField(max_length=6, null=False)
     security_question = models.BigIntegerField(
         null=False,
