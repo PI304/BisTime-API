@@ -4,6 +4,7 @@ from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.utils.decorators import method_decorator
+from django_filters.rest_framework import DjangoFilterBackend
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
@@ -20,10 +21,12 @@ from apps.team.services import TeamService, TeamRegularEventService, TeamMemberS
 from config.exceptions import InstanceNotFound
 
 
-class TeamCreateView(generics.CreateAPIView):
+class TeamView(generics.ListCreateAPIView):
     serializer_class = TeamSerializer
     queryset = Team.objects.all()
-    allowed_methods = ["POST"]
+    allowed_methods = ["GET", "POST"]
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ["name"]
 
     @swagger_auto_schema(
         operation_summary="Create Team",
@@ -34,7 +37,7 @@ class TeamCreateView(generics.CreateAPIView):
         },
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
-            required=["name", "securityAnswer"],
+            required=["name", "securityAnswer", "startTime", "endTime"],
             properties={
                 "name": openapi.Schema(type=openapi.TYPE_STRING, description="팀 이름"),
                 "securityQuestion": openapi.Schema(
@@ -45,6 +48,12 @@ class TeamCreateView(generics.CreateAPIView):
                 ),
                 "securityAnswer": openapi.Schema(
                     type=openapi.TYPE_STRING, description="보안 질문 정답"
+                ),
+                "startTime": openapi.Schema(
+                    type=openapi.TYPE_STRING, description="팀의 워크아워 시작 시간"
+                ),
+                "endTime": openapi.Schema(
+                    type=openapi.TYPE_STRING, description="팀의 워크아워 종료 시간"
                 ),
             },
         ),
@@ -115,7 +124,10 @@ class TeamDetailView(generics.RetrieveUpdateDestroyAPIView):
     allowed_methods = ["PATCH", "GET", "DELETE"]
 
     def get_object(self) -> Team:
-        return self.queryset.filter(uuid=self.kwargs.get("uuid")).first()
+        team = self.queryset.filter(uuid=self.kwargs.get("uuid")).first()
+        if not team:
+            raise InstanceNotFound("team with the provided uuid does not exist")
+        return team
 
     def perform_update(self, serializer):
         serializer.save(updated_at=timezone.now())
@@ -256,7 +268,12 @@ class TeamRegularEventDetailView(generics.RetrieveUpdateDestroyAPIView):
     allowed_methods = ["GET", "PATCH", "DELETE"]
 
     def get_object(self) -> TeamRegularEvent:
-        return self.queryset.filter(uuid=self.kwargs.get("uuid")).first()
+        regular_event = self.queryset.filter(uuid=self.kwargs.get("uuid")).first()
+        if not regular_event:
+            raise InstanceNotFound(
+                "regular event with the provided uuid does not exist"
+            )
+        return regular_event
 
     def perform_update(self, serializer):
         serializer.save(updated_at=timezone.now())

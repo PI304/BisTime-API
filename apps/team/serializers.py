@@ -1,14 +1,17 @@
-from typing import List
+from typing import List, Dict
 
 from django.http import Http404
 from django.shortcuts import get_list_or_404, get_object_or_404
+from django.utils import timezone
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
 from apps.event.serializers import EventSerializer
 from apps.team.models import Team, TeamRegularEvent, SubGroup, TeamMember
 from apps.team.services import TeamMemberService
-from config.exceptions import InstanceNotFound
+from config.custom_fields import TeamUUIDField, TeamSubgroupField
+from config.exceptions import InstanceNotFound, DuplicateInstance
+from config.mixins import TimeBlockMixin
 
 
 class TeamSerializer(serializers.ModelSerializer):
@@ -28,6 +31,8 @@ class TeamSerializer(serializers.ModelSerializer):
             "security_question",
             "custom_security_question",
             "security_answer",
+            "start_time",
+            "end_time",
             "created_at",
             "updated_at",
         ]
@@ -51,6 +56,13 @@ class TeamSerializer(serializers.ModelSerializer):
             return subgroups
 
         return [s.name for s in subgroup_instances]
+
+    def validate(self, data: Dict) -> Dict:
+        print(data)
+        TimeBlockMixin.validate_time_data(data)
+
+        # TODO: validate security question index number
+        return data
 
 
 class TeamRegularEventSerializer(serializers.ModelSerializer):
@@ -76,19 +88,7 @@ class TeamRegularEventSerializer(serializers.ModelSerializer):
         """
         Validate model input
         """
-        if "start_time" in data:
-            EventSerializer.time_validation(data["start_time"])
-
-        if "end_time" in data:
-            EventSerializer.time_validation(data["end_time"])
-
-        if "start_time" in data and "end_time" in data:
-            if (
-                int(data["end_time"].split(":")[0])
-                - int(data["start_time"].split(":")[0])
-                < 0
-            ):
-                raise ValidationError("end_time should be larger than start_time")
+        TimeBlockMixin.validate_time_data(data)
         if data["day"] < 0 or data["day"] > 6:
             raise ValidationError("day should be between 0 and 6")
 
@@ -104,39 +104,6 @@ class SubgroupSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "team", "created_at", "updated_at"]
 
 
-class TeamUUIDField(serializers.Field):
-    def to_representation(self, value: Team) -> str:
-        team = get_object_or_404(Team, id=value.id)
-        return team.uuid
-
-    def to_internal_value(self, data):
-        print(data)
-        if not isinstance(data, str):
-            msg = "Incorrect type. Expected a str (uuid), but got %s"
-            raise ValidationError(msg % type(data).__name__)
-        try:
-            team = get_object_or_404(Team, uuid=data)
-        except Http404:
-            raise InstanceNotFound("team with the provided uuid does not exist")
-        return team.id
-
-
-class TeamSubgroupField(serializers.Field):
-    def to_representation(self, value: SubGroup) -> str:
-        subgroup = get_object_or_404(SubGroup, id=value.id)
-        return subgroup.name
-
-    def to_internal_value(self, data):
-        if not isinstance(data, str):
-            msg = "Incorrect type. Expected a str (name), but got %s"
-            raise ValidationError(msg % type(data).__name__)
-        try:
-            subgroup = get_object_or_404(SubGroup, name=data)
-        except Http404:
-            raise InstanceNotFound("subgroup with the provided id does not exist")
-        return subgroup.id
-
-
 class TeamMemberSerializer(serializers.ModelSerializer):
     team = TeamUUIDField()
     subgroup = TeamSubgroupField()
@@ -147,22 +114,27 @@ class TeamMemberSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "subgroup", "team", "created_at", "updated_at"]
 
     def create(self, validated_data):
-        print(validated_data)
-        return TeamMember.objects.create(
-            team_id=validated_data["team"],
-            subgroup_id=validated_data["subgroup"],
-            name=validated_data["name"],
-        )
+        try:
+            existing_member = get_object_or_404(TeamMember, name=validated_data["name"])
+            raise DuplicateInstance("member with the provided name already exists.")
+        except Http404:
+            return TeamMember.objects.create(
+                team_id=validated_data["team"].id,
+                subgroup_id=validated_data["subgroup"],
+                name=validated_data["name"],
+            )
 
     def update(self, instance, validated_data):
-        instance.subgroup_id = validated_data["subgroup"]
-        instance.updated_at = validated_data["updated_at"]
+        if "subgroup" in validated_data:
+            instance.subgroup_id = validated_data["subgroup"]
+        instance.updated_at = timezone.now()
         instance.save(update_fields=["subgroup", "updated_at"])
         return instance
 
 
 class WeekScheduleSerializer(serializers.Serializer):
     team = TeamUUIDField()
+    subgroup = TeamSubgroupField()
     name = serializers.CharField(max_length=20)
     week_schedule = serializers.ListField(min_length=7, max_length=7)
 
@@ -176,7 +148,7 @@ class WeekScheduleSerializer(serializers.Serializer):
 
     def validate_team(self, value):
         try:
-            team = get_object_or_404(Team, id=value)
+            team = get_object_or_404(Team, id=value.id)
         except Http404:
             raise InstanceNotFound("team with the provided uuid does not exist")
 
@@ -186,7 +158,7 @@ class WeekScheduleSerializer(serializers.Serializer):
         schedule_bytes: List[bytearray] = []
 
         try:
-            team = get_object_or_404(Team, id=self.validated_data["team"])
+            team = get_object_or_404(Team, id=self.validated_data["team"].id)
         except Http404:
             raise InstanceNotFound("team with the provided uuid does not exist")
 

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import datetime
-from typing import Union
+from typing import Union, Optional, Dict, List
 
 import shortuuid
 from django.http import Http404
@@ -69,10 +69,10 @@ class EventService(object):
 
         return availability_obj
 
-    def get_availability_str(self) -> Union[dict[str, str], None]:
+    def get_availability_str(self) -> Dict[str, Union[str, List[int]]]:
 
-        availability_obj: Union[
-            dict[str, Union[str, list[int]]], None
+        availability_obj: Optional[
+            Dict[str, Union[str, List[int]]]
         ] = self.calculate_event_availability()
 
         if availability_obj is None:

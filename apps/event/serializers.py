@@ -1,8 +1,8 @@
-from datetime import datetime, date
-
-from django.utils import timezone
+import datetime
 
 from apps.event.services import EventService
+from config.custom_fields import TeamUUIDField
+from config.mixins import TimeBlockMixin
 
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
@@ -11,8 +11,7 @@ from typing import Dict, Union
 
 
 class EventSerializer(serializers.ModelSerializer):
-    # TODO: associated_team
-    # associated_team = PrimaryKeyRelatedField(queryset=Team.objects.all())
+    associated_team = TeamUUIDField()
     availability = serializers.SerializerMethodField()
 
     class Meta:
@@ -31,8 +30,8 @@ class EventSerializer(serializers.ModelSerializer):
         read_only_fields = [
             "id",
             "uuid",
-            "associated_team",
             "availability",
+            "associated_team",
             "created_at",
             "updated_at",
         ]
@@ -42,47 +41,17 @@ class EventSerializer(serializers.ModelSerializer):
         availability: Union[dict[str, str], None] = event_service.get_availability_str()
         return availability
 
-    @staticmethod
-    def time_validation(time_exp: str):
-        if ":" not in time_exp or len(time_exp) != 5 or len(time_exp.split(":")) != 2:
-            raise ValidationError("_time should be of 'HH:MM' format")
-
-        time_split = time_exp.split(":")
-
-        if len(time_split[0]) != 2 or len(time_split[1]) != 2:
-            raise ValidationError("_time should be of 'HH:MM' format")
-
-        if int(time_split[0]) < 0 or int(time_split[0]) > 24:
-            raise ValidationError("hours should be between 00 ~ 24")
-
-        if not (time_split[1] == "30" or time_split[1] == "00"):
-            raise ValidationError("minutes should be 00 or 30")
-
     def validate(self, data: Dict) -> Dict:
         """
         Validate model input
         """
-        if "start_time" in data:
-            self.time_validation(data["start_time"])
-
-        if "end_time" in data:
-            self.time_validation(data["end_time"])
-
-        if "start_time" in data and "end_time" in data:
-            if (
-                int(data["end_time"].split(":")[0])
-                - int(data["start_time"].split(":")[0])
-                < 0
-            ):
-                raise ValidationError("end_time should be larger than start_time")
-
-        # TODO: Check if team exists
+        TimeBlockMixin.validate_time_data(data)
 
         return data
 
 
 class EventDateSerializer(serializers.ModelSerializer):
-    # event = EventSerializer(read_only=True)
+    event = EventSerializer(read_only=True)
 
     class Meta:
         model = EventDate
@@ -94,11 +63,12 @@ class EventDateSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
 
-    def validate_date(self, value: datetime) -> datetime:
+    def validate_date(self, value: datetime.date) -> datetime.date:
         """
         Check if date is of future value
         """
-        if value <= date.today():
+        print(type(value))
+        if value <= datetime.date.today():
             raise ValidationError("should be a future date")
 
         return value
@@ -118,7 +88,7 @@ class ByteArrayField(serializers.Field):
 
 
 class ScheduleSerializer(serializers.ModelSerializer):
-    date = serializers.StringRelatedField()
+    date: str = serializers.StringRelatedField()
     availability = ByteArrayField()
 
     class Meta:
@@ -135,7 +105,6 @@ class ScheduleSerializer(serializers.ModelSerializer):
         read_only_fields = [
             "id",
             "date",
-            "event",
             "created_at",
             "updated_at",
         ]

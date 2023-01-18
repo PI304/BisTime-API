@@ -1,5 +1,5 @@
-from datetime import date
-from typing import Any, List
+from datetime import date, datetime
+from typing import Any, List, Dict
 from django.http import Http404
 from django.shortcuts import get_object_or_404, get_list_or_404
 from django.utils import timezone
@@ -20,6 +20,7 @@ from apps.event.serializers import (
     ScheduleSerializer,
 )
 from apps.event.services import EventService, EventDateService
+from apps.team.models import Team
 from config.exceptions import InstanceNotFound
 
 name_param = openapi.Parameter(
@@ -49,7 +50,7 @@ class EventView(generics.ListCreateAPIView):
             type=openapi.TYPE_OBJECT,
             properties={
                 "associated_team": openapi.Schema(
-                    type=openapi.TYPE_INTEGER, description="연관된 팀"
+                    type=openapi.TYPE_STRING, description="연관된 팀의 uuid"
                 ),
                 "title": openapi.Schema(type=openapi.TYPE_STRING, description="제목"),
                 "startTime": openapi.Schema(
@@ -62,10 +63,17 @@ class EventView(generics.ListCreateAPIView):
         ),
     )
     def post(self, request: Request, *args: Any, **kwargs: Any) -> Response:
+        try:
+            team = get_object_or_404(Team, uuid=request.data.get("associated_team"))
+        except Http404:
+            raise InstanceNotFound("team with the provided uuid does not exist")
+
         serializer = self.get_serializer(data=request.data)
 
         if serializer.is_valid(raise_exception=True):
-            serializer.save(uuid=EventService.generate_uuid())
+            serializer.save(
+                uuid=EventService.generate_uuid(), associated_team_id=team.id
+            )
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
@@ -173,7 +181,7 @@ class EventDateView(generics.ListCreateAPIView):
         ),
     )
     def post(self, request: Request, *args: Any, **kwargs: Any) -> Response:
-        additional_dates: List[date] = request.data.get("additional_dates")
+        additional_dates: List[datetime.date] = request.data.get("additional_dates")
         associated_event_uuid: str = kwargs.get("uuid")
 
         associated_event: Event = EventService.get_event_by_uuid(associated_event_uuid)
@@ -371,7 +379,7 @@ class ScheduleView(generics.ListCreateAPIView, generics.UpdateAPIView):
                 return Response(serializer.data, status=status.HTTP_200_OK)
             except Http404 as e:
                 # 새로운 스케줄 생성
-                data = {
+                data: Dict[str, bytearray] = {
                     "name": name,
                     "availability": bytearray([int(n) for n in availability]),
                 }
