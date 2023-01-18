@@ -4,6 +4,7 @@ from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.utils.decorators import method_decorator
+from django_filters.rest_framework import DjangoFilterBackend
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
@@ -20,10 +21,12 @@ from apps.team.services import TeamService, TeamRegularEventService, TeamMemberS
 from config.exceptions import InstanceNotFound
 
 
-class TeamCreateView(generics.CreateAPIView):
+class TeamView(generics.ListCreateAPIView):
     serializer_class = TeamSerializer
     queryset = Team.objects.all()
-    allowed_methods = ["POST"]
+    allowed_methods = ["GET", "POST"]
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ["name"]
 
     @swagger_auto_schema(
         operation_summary="Create Team",

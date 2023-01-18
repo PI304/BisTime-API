@@ -10,7 +10,7 @@ from apps.team.views.member_views import (
     TeamMemberDetailView,
 )
 from apps.team.views.views import (
-    TeamCreateView,
+    TeamView,
     TeamDetailView,
     TeamRegularEventListView,
     TeamRegularEventDetailView,
@@ -19,7 +19,7 @@ from apps.team.views.views import (
 )
 
 urlpatterns = [
-    path("", TeamCreateView.as_view(), name="team-create"),
+    path("", TeamView.as_view(), name="team-list-create"),
     path(
         "/members",
         TeamMemberCreateView.as_view(),
