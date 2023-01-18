@@ -2,13 +2,14 @@ from typing import List, Dict
 
 from django.http import Http404
 from django.shortcuts import get_list_or_404, get_object_or_404
+from django.utils import timezone
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
 from apps.event.serializers import EventSerializer
 from apps.team.models import Team, TeamRegularEvent, SubGroup, TeamMember
 from apps.team.services import TeamMemberService
-from config.exceptions import InstanceNotFound
+from config.exceptions import InstanceNotFound, DuplicateInstance
 from config.mixins import TimeBlockMixin
 
 
@@ -157,16 +158,20 @@ class TeamMemberSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "subgroup", "team", "created_at", "updated_at"]
 
     def create(self, validated_data):
-        print(validated_data)
-        return TeamMember.objects.create(
-            team_id=validated_data["team"],
-            subgroup_id=validated_data["subgroup"],
-            name=validated_data["name"],
-        )
+        try:
+            existing_member = get_object_or_404(TeamMember, name=validated_data["name"])
+            raise DuplicateInstance("member with the provided name already exists.")
+        except Http404:
+            return TeamMember.objects.create(
+                team_id=validated_data["team"],
+                subgroup_id=validated_data["subgroup"],
+                name=validated_data["name"],
+            )
 
     def update(self, instance, validated_data):
-        instance.subgroup_id = validated_data["subgroup"]
-        instance.updated_at = validated_data["updated_at"]
+        if "subgroup" in validated_data:
+            instance.subgroup_id = validated_data["subgroup"]
+        instance.updated_at = timezone.now()
         instance.save(update_fields=["subgroup", "updated_at"])
         return instance
 

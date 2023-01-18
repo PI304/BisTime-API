@@ -28,6 +28,7 @@ class TeamMemberCreateView(generics.CreateAPIView):
             201: openapi.Response("Success", TeamMemberSerializer),
             400: "Validation error",
             404: "Not found",
+            409: "member with the provided name already exists",
         },
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
@@ -40,7 +41,8 @@ class TeamMemberCreateView(generics.CreateAPIView):
                     type=openapi.TYPE_STRING, description="멤버를 추가할 팀의, 서브그룹의 이름"
                 ),
                 "name": openapi.Schema(
-                    type=openapi.TYPE_STRING, description="추가할 멤버 이름"
+                    type=openapi.TYPE_STRING,
+                    description="추가할 멤버 이름. POST 요청으로 이미 존재하는 멤버의 이름을 입력하는 경우 409 에러. 수정할 경우 PATCH 이용",
                 ),
                 "weekSchedule": openapi.Schema(
                     type=openapi.TYPE_ARRAY,
@@ -54,14 +56,10 @@ class TeamMemberCreateView(generics.CreateAPIView):
         ),
     )
     def post(self, request: Request, *args: Any, **kwargs: Any) -> Response:
-        name = request.data.get("name")
-        team = request.data.get("team")
-
         try:
-            existing_member = get_object_or_404(TeamMember, name=name, team__uuid=team)
-            raise DuplicateInstance("team member with the provided name already exists")
+            existing_team = get_object_or_404(Team, uuid=request.data.get("team"))
         except Http404:
-            pass
+            raise InstanceNotFound("team with the provided uuid does not exist")
 
         serializer = self.get_serializer(data=request.data)
 
@@ -153,7 +151,7 @@ class TeamMemberListView(generics.ListAPIView):
     name="patch",
     decorator=swagger_auto_schema(
         tags=["team-members"],
-        operation_summary="Update team member's subgroup",
+        operation_summary="Update team member's subgroup OR week schedule",
         operation_description="스케줄 초기화시에도 해당 엔드포인트 사용 (모두 1로 초기화)",
         responses={
             200: openapi.Response("Success", TeamMemberSerializer),
@@ -199,9 +197,7 @@ class TeamMemberDetailView(generics.UpdateAPIView, generics.DestroyAPIView):
 
     def update(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         instance = self.get_object()
-        serializer = self.get_serializer(
-            instance, data={"subgroup": request.data.get("subgroup")}, partial=True
-        )
+        serializer = self.get_serializer(instance, data=request.data, partial=True)
         if serializer.is_valid(raise_exception=True):
             serializer.save(updated_at=timezone.now())
 
