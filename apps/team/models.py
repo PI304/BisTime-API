@@ -3,7 +3,7 @@ from django.core.validators import MinLengthValidator
 from config.mixins import TimeStampMixin, TimeBlockMixin
 
 
-class Team(TimeStampMixin):
+class Team(TimeStampMixin, TimeBlockMixin):
     """
     For team mode
     """
