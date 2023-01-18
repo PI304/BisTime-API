@@ -197,7 +197,11 @@ class TeamMemberDetailView(generics.UpdateAPIView, generics.DestroyAPIView):
 
     def update(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         instance = self.get_object()
-        serializer = self.get_serializer(instance, data=request.data, partial=True)
+        serializer = self.get_serializer(
+            instance,
+            data={"subgroup": instance.subgroup.name, **request.data},
+            partial=True,
+        )
         if serializer.is_valid(raise_exception=True):
             serializer.save(updated_at=timezone.now())
 

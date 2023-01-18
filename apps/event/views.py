@@ -20,6 +20,7 @@ from apps.event.serializers import (
     ScheduleSerializer,
 )
 from apps.event.services import EventService, EventDateService
+from apps.team.models import Team
 from config.exceptions import InstanceNotFound
 
 name_param = openapi.Parameter(
@@ -49,7 +50,7 @@ class EventView(generics.ListCreateAPIView):
             type=openapi.TYPE_OBJECT,
             properties={
                 "associated_team": openapi.Schema(
-                    type=openapi.TYPE_INTEGER, description="연관된 팀"
+                    type=openapi.TYPE_STRING, description="연관된 팀의 uuid"
                 ),
                 "title": openapi.Schema(type=openapi.TYPE_STRING, description="제목"),
                 "startTime": openapi.Schema(
@@ -62,10 +63,17 @@ class EventView(generics.ListCreateAPIView):
         ),
     )
     def post(self, request: Request, *args: Any, **kwargs: Any) -> Response:
+        try:
+            team = get_object_or_404(Team, uuid=request.data.get("associated_team"))
+        except Http404:
+            raise InstanceNotFound("team with the provided uuid does not exist")
+
         serializer = self.get_serializer(data=request.data)
 
         if serializer.is_valid(raise_exception=True):
-            serializer.save(uuid=EventService.generate_uuid())
+            serializer.save(
+                uuid=EventService.generate_uuid(), associated_team_id=team.id
+            )
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 

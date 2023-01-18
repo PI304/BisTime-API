@@ -1,11 +1,8 @@
-import json
-from datetime import datetime
-from pytz import timezone
-from rest_framework.relations import PrimaryKeyRelatedField
+import datetime
 
 from apps.event.services import EventService
+from config.custom_fields import TeamUUIDField
 from config.mixins import TimeBlockMixin
-from config.settings.base import TIME_ZONE
 
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
@@ -14,8 +11,7 @@ from typing import Dict, Union
 
 
 class EventSerializer(serializers.ModelSerializer):
-    # TODO: associated_team
-    # associated_team = PrimaryKeyRelatedField(queryset=Team.objects.all())
+    associated_team = TeamUUIDField()
     availability = serializers.SerializerMethodField()
 
     class Meta:
@@ -35,6 +31,7 @@ class EventSerializer(serializers.ModelSerializer):
             "id",
             "uuid",
             "availability",
+            "associated_team",
             "created_at",
             "updated_at",
         ]
@@ -70,7 +67,7 @@ class EventDateSerializer(serializers.ModelSerializer):
         """
         Check if date is of future value
         """
-        if value <= datetime.now(timezone(TIME_ZONE)).date():
+        if value <= datetime.date.today():
             raise ValidationError("should be a future date")
 
         return value

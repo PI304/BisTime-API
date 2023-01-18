@@ -9,6 +9,7 @@ from rest_framework.exceptions import ValidationError
 from apps.event.serializers import EventSerializer
 from apps.team.models import Team, TeamRegularEvent, SubGroup, TeamMember
 from apps.team.services import TeamMemberService
+from config.custom_fields import TeamUUIDField, TeamSubgroupField
 from config.exceptions import InstanceNotFound, DuplicateInstance
 from config.mixins import TimeBlockMixin
 
@@ -115,39 +116,6 @@ class SubgroupSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "team", "created_at", "updated_at"]
 
 
-class TeamUUIDField(serializers.Field):
-    def to_representation(self, value: Team) -> str:
-        team = get_object_or_404(Team, id=value.id)
-        return team.uuid
-
-    def to_internal_value(self, data):
-        print(data)
-        if not isinstance(data, str):
-            msg = "Incorrect type. Expected a str (uuid), but got %s"
-            raise ValidationError(msg % type(data).__name__)
-        try:
-            team = get_object_or_404(Team, uuid=data)
-        except Http404:
-            raise InstanceNotFound("team with the provided uuid does not exist")
-        return team.id
-
-
-class TeamSubgroupField(serializers.Field):
-    def to_representation(self, value: SubGroup) -> str:
-        subgroup = get_object_or_404(SubGroup, id=value.id)
-        return subgroup.name
-
-    def to_internal_value(self, data):
-        if not isinstance(data, str):
-            msg = "Incorrect type. Expected a str (name), but got %s"
-            raise ValidationError(msg % type(data).__name__)
-        try:
-            subgroup = get_object_or_404(SubGroup, name=data)
-        except Http404:
-            raise InstanceNotFound("subgroup with the provided id does not exist")
-        return subgroup.id
-
-
 class TeamMemberSerializer(serializers.ModelSerializer):
     team = TeamUUIDField()
     subgroup = TeamSubgroupField()
@@ -163,7 +131,7 @@ class TeamMemberSerializer(serializers.ModelSerializer):
             raise DuplicateInstance("member with the provided name already exists.")
         except Http404:
             return TeamMember.objects.create(
-                team_id=validated_data["team"],
+                team_id=validated_data["team"].id,
                 subgroup_id=validated_data["subgroup"],
                 name=validated_data["name"],
             )
@@ -178,7 +146,7 @@ class TeamMemberSerializer(serializers.ModelSerializer):
 
 class WeekScheduleSerializer(serializers.Serializer):
     team = TeamUUIDField()
-    # TODO: add subgroup
+    subgroup = TeamSubgroupField()
     name = serializers.CharField(max_length=20)
     week_schedule = serializers.ListField(min_length=7, max_length=7)
 
@@ -192,7 +160,7 @@ class WeekScheduleSerializer(serializers.Serializer):
 
     def validate_team(self, value):
         try:
-            team = get_object_or_404(Team, id=value)
+            team = get_object_or_404(Team, id=value.id)
         except Http404:
             raise InstanceNotFound("team with the provided uuid does not exist")
 
@@ -202,7 +170,7 @@ class WeekScheduleSerializer(serializers.Serializer):
         schedule_bytes: List[bytearray] = []
 
         try:
-            team = get_object_or_404(Team, id=self.validated_data["team"])
+            team = get_object_or_404(Team, id=self.validated_data["team"].id)
         except Http404:
             raise InstanceNotFound("team with the provided uuid does not exist")
 
