@@ -29,6 +29,8 @@ class TeamSerializer(serializers.ModelSerializer):
             "security_question",
             "custom_security_question",
             "security_answer",
+            "start_time",
+            "end_time",
             "created_at",
             "updated_at",
         ]
@@ -54,6 +56,7 @@ class TeamSerializer(serializers.ModelSerializer):
         return [s.name for s in subgroup_instances]
 
     def validate(self, data: Dict) -> Dict:
+        print(data)
         TimeBlockMixin.validate_time_data(data)
 
         # TODO: validate security question index number
