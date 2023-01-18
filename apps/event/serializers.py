@@ -63,10 +63,11 @@ class EventDateSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
 
-    def validate_date(self, value: datetime) -> datetime:
+    def validate_date(self, value: datetime.date) -> datetime.date:
         """
         Check if date is of future value
         """
+        print(type(value))
         if value <= datetime.date.today():
             raise ValidationError("should be a future date")
 
@@ -87,7 +88,7 @@ class ByteArrayField(serializers.Field):
 
 
 class ScheduleSerializer(serializers.ModelSerializer):
-    date = serializers.StringRelatedField()
+    date: str = serializers.StringRelatedField()
     availability = ByteArrayField()
 
     class Meta:

@@ -88,19 +88,7 @@ class TeamRegularEventSerializer(serializers.ModelSerializer):
         """
         Validate model input
         """
-        if "start_time" in data:
-            EventSerializer.time_validation(data["start_time"])
-
-        if "end_time" in data:
-            EventSerializer.time_validation(data["end_time"])
-
-        if "start_time" in data and "end_time" in data:
-            if (
-                int(data["end_time"].split(":")[0])
-                - int(data["start_time"].split(":")[0])
-                < 0
-            ):
-                raise ValidationError("end_time should be larger than start_time")
+        TimeBlockMixin.validate_time_data(data)
         if data["day"] < 0 or data["day"] > 6:
             raise ValidationError("day should be between 0 and 6")
 

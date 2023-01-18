@@ -1,5 +1,5 @@
-from datetime import date
-from typing import Any, List
+from datetime import date, datetime
+from typing import Any, List, Dict
 from django.http import Http404
 from django.shortcuts import get_object_or_404, get_list_or_404
 from django.utils import timezone
@@ -181,7 +181,7 @@ class EventDateView(generics.ListCreateAPIView):
         ),
     )
     def post(self, request: Request, *args: Any, **kwargs: Any) -> Response:
-        additional_dates: List[date] = request.data.get("additional_dates")
+        additional_dates: List[datetime.date] = request.data.get("additional_dates")
         associated_event_uuid: str = kwargs.get("uuid")
 
         associated_event: Event = EventService.get_event_by_uuid(associated_event_uuid)
@@ -379,7 +379,7 @@ class ScheduleView(generics.ListCreateAPIView, generics.UpdateAPIView):
                 return Response(serializer.data, status=status.HTTP_200_OK)
             except Http404 as e:
                 # 새로운 스케줄 생성
-                data = {
+                data: Dict[str, bytearray] = {
                     "name": name,
                     "availability": bytearray([int(n) for n in availability]),
                 }

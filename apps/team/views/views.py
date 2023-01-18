@@ -124,7 +124,10 @@ class TeamDetailView(generics.RetrieveUpdateDestroyAPIView):
     allowed_methods = ["PATCH", "GET", "DELETE"]
 
     def get_object(self) -> Team:
-        return self.queryset.filter(uuid=self.kwargs.get("uuid")).first()
+        team = self.queryset.filter(uuid=self.kwargs.get("uuid")).first()
+        if not team:
+            raise InstanceNotFound("team with the provided uuid does not exist")
+        return team
 
     def perform_update(self, serializer):
         serializer.save(updated_at=timezone.now())
@@ -265,7 +268,12 @@ class TeamRegularEventDetailView(generics.RetrieveUpdateDestroyAPIView):
     allowed_methods = ["GET", "PATCH", "DELETE"]
 
     def get_object(self) -> TeamRegularEvent:
-        return self.queryset.filter(uuid=self.kwargs.get("uuid")).first()
+        regular_event = self.queryset.filter(uuid=self.kwargs.get("uuid")).first()
+        if not regular_event:
+            raise InstanceNotFound(
+                "regular event with the provided uuid does not exist"
+            )
+        return regular_event
 
     def perform_update(self, serializer):
         serializer.save(updated_at=timezone.now())
