@@ -129,12 +129,10 @@ class EventDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = EventSerializer
     queryset = Event.objects.all()
     allowed_methods = ["GET", "PATCH", "DELETE"]
+    lookup_field = "uuid"
 
     def get_queryset(self):
         return self.queryset.filter(uuid=self.kwargs.get("uuid"))
-
-    def get_object(self):
-        return self.get_queryset().first()
 
     def perform_update(self, serializer):
         serializer.save(updated_at=timezone.now())
@@ -151,15 +149,13 @@ class EventDateView(generics.ListCreateAPIView):
     serializer_class = EventDateSerializer
     queryset = EventDate.objects.all()
     allowed_methods = ["POST"]
+    lookup_field = "uuid"
 
     def get_queryset(self):
         qs = self.queryset.filter(event__uuid=self.kwargs.get("uuid")).order_by(
-            "event__id", "date"
+            "event__created_at", "date"
         )
         return qs
-
-    def get_object(self):
-        return self.get_queryset().filter(event__uuid=self.kwargs.get("uuid")).first()
 
     @swagger_auto_schema(
         operation_summary="Update(Add) an instant event's date",
@@ -234,13 +230,16 @@ class EventDateDestroyView(generics.DestroyAPIView):
 )
 class ScheduleView(generics.ListCreateAPIView, generics.UpdateAPIView):
     serializer_class = ScheduleSerializer
-    queryset = Schedule.objects.all().order_by("event", "date__date")
+    queryset = Schedule.objects.all()
     allowed_methods = ["GET", "POST", "PATCH"]
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ["name"]
+    lookup_field = "uuid"
 
     def get_queryset(self):
-        qs = self.queryset.filter(event__uuid=self.kwargs.get("uuid"))
+        qs = self.queryset.filter(event__uuid=self.kwargs.get("uuid")).order_by(
+            "date__date"
+        )
         return qs
 
     @swagger_auto_schema(
@@ -272,10 +271,11 @@ class ScheduleView(generics.ListCreateAPIView, generics.UpdateAPIView):
         name: str = request.data.get("name")
 
         associated_event: Event = EventService.get_event_by_uuid(event_uuid)
+        associated_event_id: int = associated_event.id
 
         try:
             associated_dates: List[EventDate] = get_list_or_404(
-                EventDate.objects.filter(event_id=associated_event.id).order_by("date")
+                EventDate.objects.filter(event_id=associated_event_id).order_by("date")
             )
         except Http404:
             raise InstanceNotFound("event has no associated dates to add schedule to")
@@ -289,13 +289,15 @@ class ScheduleView(generics.ListCreateAPIView, generics.UpdateAPIView):
 
         schedules: List[Schedule] = []
 
-        for i in range(len(associated_dates)):
+        associated_dates_list: List[EventDate] = list(associated_dates)
+
+        for i in range(len(associated_dates_list)):
             try:
                 instance = get_object_or_404(
                     Schedule,
                     name=name,
                     date=associated_dates[i].id,
-                    event_id=associated_event.id,
+                    event_id=associated_event_id,
                 )
 
                 # instance 있을 때 -> update Instance
@@ -353,16 +355,17 @@ class ScheduleView(generics.ListCreateAPIView, generics.UpdateAPIView):
         date_id: int = request.data.get("date")
         availability: str = request.data.get("availability")
 
-        associated_event = EventService.get_event_by_uuid(event_uuid)
+        associated_event: Event = EventService.get_event_by_uuid(event_uuid)
+        associated_event_id: int = associated_event.id
 
         try:
             existing_date = get_object_or_404(
-                EventDate, event_id=associated_event.id, id=date_id
+                EventDate, event_id=associated_event_id, id=date_id
             )
             try:
                 existing_schedule = get_object_or_404(
                     Schedule,
-                    event_id=associated_event.id,
+                    event_id=associated_event_id,
                     name=name,
                     date_id=existing_date.id,
                 )
