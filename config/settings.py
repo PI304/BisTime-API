@@ -14,6 +14,7 @@ from pathlib import Path
 import os
 import sys
 from dotenv import load_dotenv
+from corsheaders.defaults import default_headers
 
 load_dotenv()
 
@@ -39,13 +40,14 @@ ALLOWED_HOSTS = []
 
 # Application definition
 
-BISTIME_APPS = ["apps.event", "apps.security_question", "apps.team"]
+BISTIME_APPS = ["apps.event", "apps.team"]
 
 THIRD_PARTY_APPS = [
     "rest_framework",
     "drf_yasg",
     "django_filters",
     "django_extensions",
+    "corsheaders",
 ]
 
 DJANGO_CORE_APPS = [
@@ -62,11 +64,30 @@ INSTALLED_APPS = DJANGO_CORE_APPS + THIRD_PARTY_APPS + BISTIME_APPS
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "config.middlewares.add_headers.AddHeaders",
+    "config.middlewares.request_middleware.RequestMiddleware",
+]
+
+# CORS
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "https://bis-time-frontend-git-dev-pi-dev.vercel.app",
+]
+
+
+CORS_ALLOW_HEADERS = list(default_headers) + [
+    "version",
+]
+
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:3000",
+    "https://bis-time-frontend-git-dev-pi-dev.vercel.app",
 ]
 
 ROOT_URLCONF = "config.urls"
@@ -109,10 +130,13 @@ REST_FRAMEWORK = {
     ],
     "DEFAULT_VERSIONING_CLASS": "rest_framework.versioning.AcceptHeaderVersioning",
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
-    "PAGE_SIZE": 2,
+    "PAGE_SIZE": 20,
     "TEST_REQUEST_DEFAULT_FORMAT": "json",
-    "DEFAULT_FILTER_BACKENDS": ("django_filters.rest_framework.DjangoFilterBackend",),
+    # "DEFAULT_FILTER_BACKENDS": ("django_filters.rest_framework.DjangoFilterBackend",),
+    "DATE_INPUT_FORMATS": ["iso-8601", "%Y-%m-%dT%H:%M:%S.%fZ"],
 }
+
+APPEND_SLASH = False
 
 
 # Database
@@ -126,6 +150,7 @@ DATABASES = {
         "PASSWORD": os.environ.get("DB_PASSWORD"),
         "HOST": os.environ.get("DB_HOST"),
         "PORT": 3306,
+        "OPTIONS": {"init_command": "SET sql_mode=STRICT_TRANS_TABLES"},
     }
 }
 
@@ -170,7 +195,8 @@ TIME_ZONE = "Asia/Seoul"
 # https://docs.djangoproject.com/en/4.1/howto/static-files/
 
 STATIC_URL = "static/"
-
+STATIC_ROOT = os.path.join(BASE_DIR, "static")
+STATICFILES_DIRS = (os.path.join(BASE_DIR, "static"),)
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.1/ref/settings/#default-auto-field
 

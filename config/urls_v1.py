@@ -15,14 +15,19 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include, re_path
+from django.utils.decorators import method_decorator
 from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
 from drf_yasg.views import get_schema_view
 from rest_framework import permissions
+from rest_framework.request import Request
+from rest_framework.response import Response
+from rest_framework.decorators import api_view
 
 api_info = openapi.Info(
     title="BisTime - API Doc",
     default_version="v1",
-    description="BisTime Application을 위한 API 문서",
+    description="BisTime Application을 위한 API 문서\nAcceptHeader Versioning 을 사용합니다.",
     terms_of_service="https://www.google.com/policies/terms/",
     contact=openapi.Contact(email="earthlyz9.dev@gmail.com"),
 )
@@ -32,9 +37,37 @@ SchemaView = get_schema_view(
     public=True,
     permission_classes=([permissions.AllowAny]),
     validators=["flex"],
+    urlconf="config.urls_v1",
 )
 
+
+@api_view(["GET"])
+def hello_world(request: Request) -> Response:
+    return Response("Go to '/api/swagger' or '/api/redoc' for api documentation")
+
+
 urlpatterns = [
-    path("health-check", health_check_view, name="health-check"),
-    re_path(r"^api", include("config.urls_v1")),
+    path("", hello_world),
+    path("/admin", admin.site.urls),
+    path("/events", include("apps.event.urls")),
+    path("/teams", include("apps.team.urls")),
+    path("/api-auth", include("rest_framework.urls")),
+]
+
+urlpatterns += [
+    re_path(
+        r"^/swagger(?P<format>\.json|\.yaml)/$",
+        SchemaView.without_ui(cache_timeout=0),
+        name="schema-json",
+    ),
+    re_path(
+        r"^/swagger/$",
+        SchemaView.with_ui("swagger", cache_timeout=0),
+        name="schema-swagger-ui",
+    ),
+    re_path(
+        r"^/redoc/$",
+        SchemaView.with_ui("redoc", cache_timeout=0),
+        name="schema-redoc-ui",
+    ),
 ]

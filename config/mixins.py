@@ -1,4 +1,5 @@
 from django.db import models
+from rest_framework.exceptions import ValidationError
 
 
 class TimeStampMixin(models.Model):
@@ -27,3 +28,32 @@ class TimeBlockMixin(models.Model):
 
     class Meta:
         abstract = True
+
+    @staticmethod
+    def __time_validation(time_exp: str) -> None:
+        if ":" not in time_exp or len(time_exp) != 5 or len(time_exp.split(":")) != 2:
+            raise ValidationError("_time should be of 'HH:MM' format")
+
+        time_split = time_exp.split(":")
+
+        if len(time_split[0]) != 2 or len(time_split[1]) != 2:
+            raise ValidationError("_time should be of 'HH:MM' format")
+
+        if int(time_split[0]) < 0 or int(time_split[0]) > 24:
+            raise ValidationError("hours should be between 00 ~ 24")
+
+        if not (time_split[1] == "30" or time_split[1] == "00"):
+            raise ValidationError("minutes should be 00 or 30")
+
+    @staticmethod
+    def validate_time_data(data: dict) -> None:
+        if not ("start_time" in data and "end_time" in data):
+            raise ValidationError("data must include both start_time and end_time")
+
+        TimeBlockMixin.__time_validation(data["start_time"])
+        TimeBlockMixin.__time_validation(data["end_time"])
+        if (
+            int(data["end_time"].split(":")[0]) - int(data["start_time"].split(":")[0])
+            < 0
+        ):
+            raise ValidationError("end_time should be larger than start_time")
