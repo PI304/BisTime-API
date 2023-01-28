@@ -94,7 +94,7 @@ class EventView(generics.ListCreateAPIView):
         operation_summary="Delete an event",
         operation_description="[Warning] Cascading deletion for all related dates and schedules",
         responses={
-            200: openapi.Response("Success", EventDateSerializer),
+            204: "No content",
             404: "Not found",
         },
     ),
