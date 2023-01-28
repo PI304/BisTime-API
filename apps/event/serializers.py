@@ -51,7 +51,7 @@ class EventSerializer(serializers.ModelSerializer):
 
 
 class EventDateSerializer(serializers.ModelSerializer):
-    event = EventSerializer(read_only=True)
+    event = serializers.StringRelatedField(read_only=True)
 
     class Meta:
         model = EventDate

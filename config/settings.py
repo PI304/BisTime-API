@@ -48,6 +48,7 @@ THIRD_PARTY_APPS = [
     "django_filters",
     "django_extensions",
     "corsheaders",
+    "silk",
 ]
 
 DJANGO_CORE_APPS = [
@@ -70,6 +71,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "silk.middleware.SilkyMiddleware",
     "config.middlewares.add_headers.AddHeaders",
     "config.middlewares.request_middleware.RequestMiddleware",
 ]

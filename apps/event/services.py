@@ -43,7 +43,7 @@ class EventService(object):
         s = shortuuid.encode(u)
         return s
 
-    def calculate_event_availability(self) -> Union[dict[str, list[int]], None]:
+    def __calculate_event_availability(self) -> Union[dict[str, list[int]], None]:
         associated_dates = EventDateService.get_dates_by_event_id(self.event.id)
 
         if len(associated_dates) == 0:
@@ -73,7 +73,7 @@ class EventService(object):
 
         availability_obj: Optional[
             Dict[str, Union[str, List[int]]]
-        ] = self.calculate_event_availability()
+        ] = self.__calculate_event_availability()
 
         if availability_obj is None:
             return None

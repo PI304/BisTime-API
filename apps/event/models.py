@@ -29,7 +29,7 @@ class Event(TimeStampMixin, TimeBlockMixin):
         db_table = "event"
 
     def __str__(self) -> str:
-        return f"[{self.id}] {self.title}"
+        return f"[{self.uuid}] {self.title}"
 
     def __repr__(self) -> str:
         return f"Event({self.id}, {self.title})"
