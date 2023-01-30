@@ -110,7 +110,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = "config.wsgi.application"
+WSGI_APPLICATION = "config.wsgi.debug.application"
 
 # Django REST Framework configurations
 REST_FRAMEWORK = {
