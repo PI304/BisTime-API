@@ -23,7 +23,7 @@ class TestEventService(object):
     def test_get_availability_str(
         self, create_event, create_event_dates, create_schedule
     ):
-        from django.db import connection
+        from django.db import connection, close_old_connections
 
         with CaptureQueriesContext(connection) as (expected_num_queries):
             # 2023-02-21 는 두 명 중 한명 만 되므로 '1' * 48
@@ -38,8 +38,10 @@ class TestEventService(object):
             assert result == EventService.get_availability_str(event)
             assert len(expected_num_queries.captured_queries) <= 4
 
+            close_old_connections()
+
     def test_get_related_dates(self, create_event, create_event_dates):
-        from django.db import connection
+        from django.db import connection, close_old_connections
 
         with CaptureQueriesContext(connection) as (expected_num_queries):
             queryset = EventDate.objects.select_related("event").filter(
@@ -47,3 +49,5 @@ class TestEventService(object):
             )
             l = list(queryset)
             assert len(expected_num_queries.captured_queries) == 1
+
+            close_old_connections()
