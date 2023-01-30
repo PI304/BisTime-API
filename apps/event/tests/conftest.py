@@ -25,6 +25,7 @@ def create_event(db):
 def create_event_dates(db):
     EventDate.objects.create(id=999, event_id=999, date="2023-02-21")
     EventDate.objects.create(id=998, event_id=999, date="2023-02-22")
+    EventDate.objects.create(id=997, event_id=999, date="2023-02-23")
 
 
 @pytest.fixture(autouse=False, scope="function")
@@ -34,4 +35,7 @@ def create_schedule(db):
     )
     Schedule.objects.create(
         id=998, name="지구2", event_id=999, date_id=999, availability=bytearray([1] * 48)
+    )
+    Schedule.objects.create(
+        id=997, name="지구3", event_id=999, date_id=997, availability=bytearray([1] * 48)
     )
