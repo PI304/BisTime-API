@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 import datetime
+from itertools import groupby
+from operator import itemgetter
 from typing import Union, Optional, Dict, List
 
 import shortuuid
+from django.db.models import QuerySet
 from django.http import Http404
 from django.shortcuts import get_object_or_404, get_list_or_404
 import uuid
@@ -14,13 +17,7 @@ from apps.event.models import Event, Schedule, EventDate
 from config.exceptions import InstanceNotFound
 
 
-class EventService(object):
-    def __init__(
-        self: EventService, event_id: int, request: Union[Request, None] = None
-    ):
-        self.event = self.get_event_by_id(event_id)
-        self.request = request
-
+class EventService:
     @staticmethod
     def get_event_by_id(event_id: int) -> Event:
         try:
@@ -43,37 +40,51 @@ class EventService(object):
         s = shortuuid.encode(u)
         return s
 
-    def __calculate_event_availability(self) -> Union[dict[str, list[int]], None]:
-        associated_dates = EventDateService.get_dates_by_event_id(self.event.id)
+    @staticmethod
+    def __calculate_event_availability(
+        event: Event,
+    ) -> Union[dict[str, list[int]], None]:
+        associated_dates: List[EventDate] = event.event_date.all()
 
         if len(associated_dates) == 0:
             return None
 
+        schedules: List[dict] = event.schedule.values()
+
+        # sort INFO data by 'company' key.
+        schedules = sorted(schedules, key=itemgetter("date_id"))
+
+        grouped_schedules: Dict[int, List[dict]] = {}
+
+        for key, value in groupby(schedules, key=itemgetter("date_id")):
+            grouped_schedules[key] = list(value)
+
+        print(grouped_schedules)
         availability_obj = {}
 
         for date in associated_dates:
-            availabilities = [0] * 48
-            try:
-                schedules = get_list_or_404(
-                    Schedule, event_id=self.event.id, date_id=date.id
-                )
-                for s in schedules:
-                    availabilities = [
-                        x + y for x, y in zip(availabilities, list(s.availability))
-                    ]
+            availability_list = [0] * 48
 
-            except Http404:
+            if date.id in grouped_schedules:
+                associated_schedules: List[dict] = grouped_schedules.get(date.id, None)
+                for s in associated_schedules:
+                    availability_list = [
+                        x + y
+                        for x, y in zip(availability_list, list(s["availability"]))
+                    ]
+            else:
                 pass
 
-            availability_obj[str(date.date)] = availabilities
+            availability_obj[str(date.date)] = availability_list
 
         return availability_obj
 
-    def get_availability_str(self) -> Dict[str, Union[str, List[int]]]:
+    @staticmethod
+    def get_availability_str(event: Event) -> Dict[str, Union[str, List[int]]]:
 
         availability_obj: Optional[
             Dict[str, Union[str, List[int]]]
-        ] = self.__calculate_event_availability()
+        ] = EventService.__calculate_event_availability(event)
 
         if availability_obj is None:
             return None

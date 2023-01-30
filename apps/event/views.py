@@ -1,5 +1,7 @@
 from datetime import date, datetime
 from typing import Any, List, Dict
+
+from django.db.models import Prefetch
 from django.http import Http404
 from django.shortcuts import get_object_or_404, get_list_or_404
 from django.utils import timezone
@@ -12,6 +14,7 @@ from rest_framework import generics, status, filters
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.request import Request
+from silk.profiling.profiler import silk_profile
 
 from apps.event.models import Event, EventDate, Schedule
 from apps.event.serializers import (
@@ -37,7 +40,7 @@ name_param = openapi.Parameter(
 )
 class EventView(generics.ListCreateAPIView):
     serializer_class = EventSerializer
-    queryset = Event.objects.all().order_by("id")
+    queryset = Event.objects.all()
 
     @swagger_auto_schema(
         operation_summary="Create a new instant event",
@@ -130,9 +133,14 @@ class EventDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Event.objects.all()
     allowed_methods = ["GET", "PATCH", "DELETE"]
     lookup_field = "uuid"
+    pagination_class = None
 
-    def get_queryset(self):
-        return self.queryset.filter(uuid=self.kwargs.get("uuid"))
+    def get_object(self):
+        return (
+            self.queryset.select_related("associated_team")
+            .prefetch_related("event_date", "schedule")
+            .get(uuid=self.kwargs.get("uuid"))
+        )
 
     def perform_update(self, serializer):
         serializer.save(updated_at=timezone.now())
@@ -148,12 +156,14 @@ class EventDetailView(generics.RetrieveUpdateDestroyAPIView):
 class EventDateView(generics.ListCreateAPIView):
     serializer_class = EventDateSerializer
     queryset = EventDate.objects.all()
-    allowed_methods = ["POST"]
+    allowed_methods = ["POST", "GET"]
     lookup_field = "uuid"
 
     def get_queryset(self):
-        qs = self.queryset.filter(event__uuid=self.kwargs.get("uuid")).order_by(
-            "event__created_at", "date"
+        qs = (
+            self.queryset.select_related("event")
+            .filter(event__uuid=self.kwargs.get("uuid"))
+            .order_by("date")
         )
         return qs
 
@@ -237,8 +247,10 @@ class ScheduleView(generics.ListCreateAPIView, generics.UpdateAPIView):
     lookup_field = "uuid"
 
     def get_queryset(self):
-        qs = self.queryset.filter(event__uuid=self.kwargs.get("uuid")).order_by(
-            "date__date"
+        qs = (
+            self.queryset.select_related("event", "date")
+            .filter(event__uuid=self.kwargs.get("uuid"))
+            .order_by("date__date")
         )
         return qs
 

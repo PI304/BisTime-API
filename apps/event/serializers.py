@@ -1,7 +1,6 @@
 import datetime
 
 from apps.event.services import EventService
-from config.custom_fields import TeamUUIDField
 from config.mixins import TimeBlockMixin
 
 from rest_framework import serializers
@@ -11,8 +10,8 @@ from typing import Dict, Union
 
 
 class EventSerializer(serializers.ModelSerializer):
-    associated_team = TeamUUIDField()
-    availability = serializers.SerializerMethodField()
+    associated_team = serializers.SerializerMethodField(read_only=True)
+    availability = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Event
@@ -37,9 +36,15 @@ class EventSerializer(serializers.ModelSerializer):
         ]
 
     def get_availability(self, obj):
-        event_service: EventService = EventService(obj.id)
-        availability: Union[dict[str, str], None] = event_service.get_availability_str()
+        availability: Union[dict[str, str], None] = EventService.get_availability_str(
+            obj
+        )
         return availability
+
+    def get_associated_team(self, obj):
+        if obj.associated_team is None:
+            return None
+        return obj.associated_team.name
 
     def validate(self, data: Dict) -> Dict:
         """
@@ -51,7 +56,7 @@ class EventSerializer(serializers.ModelSerializer):
 
 
 class EventDateSerializer(serializers.ModelSerializer):
-    event = serializers.StringRelatedField(read_only=True)
+    event = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = EventDate
@@ -62,6 +67,9 @@ class EventDateSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
+
+    def get_event(self, obj):
+        return obj.event.uuid
 
     def validate_date(self, value: datetime.date) -> datetime.date:
         """
@@ -88,7 +96,7 @@ class ByteArrayField(serializers.Field):
 
 
 class ScheduleSerializer(serializers.ModelSerializer):
-    date: str = serializers.StringRelatedField()
+    date: str = serializers.SerializerMethodField(read_only=True)
     availability = ByteArrayField()
 
     class Meta:
@@ -105,6 +113,10 @@ class ScheduleSerializer(serializers.ModelSerializer):
         read_only_fields = [
             "id",
             "date",
+            "event",
             "created_at",
             "updated_at",
         ]
+
+    def get_date(self, obj):
+        return str(obj.date.date)
