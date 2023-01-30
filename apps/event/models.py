@@ -42,7 +42,7 @@ class EventDate(TimeStampMixin):
 
     id = models.BigAutoField(primary_key=True)
     event = models.ForeignKey(
-        Event, null=False, on_delete=models.CASCADE, related_name="event"
+        Event, null=False, on_delete=models.CASCADE, related_name="event_date"
     )
     date = models.DateField(null=False)
 
@@ -66,7 +66,9 @@ class Schedule(TimeStampMixin):
     event = models.ForeignKey(
         Event, null=False, on_delete=models.CASCADE, related_name="schedule"
     )
-    date = models.ForeignKey(EventDate, null=False, on_delete=models.CASCADE)
+    date = models.ForeignKey(
+        EventDate, null=False, on_delete=models.CASCADE, related_name="event_date"
+    )
     availability = models.BinaryField(
         null=False, blank=False, help_text="길이 48인 array 를 bytearray 로 변환하여 저장"
     )
