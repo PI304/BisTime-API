@@ -96,7 +96,7 @@ class ByteArrayField(serializers.Field):
 
 
 class ScheduleSerializer(serializers.ModelSerializer):
-    date: str = serializers.StringRelatedField()
+    date: str = serializers.SerializerMethodField(read_only=True)
     availability = ByteArrayField()
 
     class Meta:
@@ -113,6 +113,10 @@ class ScheduleSerializer(serializers.ModelSerializer):
         read_only_fields = [
             "id",
             "date",
+            "event",
             "created_at",
             "updated_at",
         ]
+
+    def get_date(self, obj):
+        return str(obj.date.date)
