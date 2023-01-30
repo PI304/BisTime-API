@@ -10,6 +10,7 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 from rest_framework.request import Request
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from apps.team.models import Team, TeamRegularEvent, SubGroup
 from apps.team.serializers import (
@@ -20,13 +21,37 @@ from apps.team.serializers import (
 from apps.team.services import TeamService, TeamRegularEventService, TeamMemberService
 from config.exceptions import InstanceNotFound
 
+team_name_param = openapi.Parameter(
+    "name", openapi.IN_QUERY, description="팀 이름", type=openapi.TYPE_STRING
+)
 
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_description="use query string 'name' to get a team by its name",
+        manual_parameters=[team_name_param],
+        responses={
+            200: openapi.Response("Success", TeamSerializer),
+            404: "Not found",
+        },
+    ),
+)
 class TeamView(generics.ListCreateAPIView):
     serializer_class = TeamSerializer
     queryset = Team.objects.all()
     allowed_methods = ["GET", "POST"]
-    filter_backends = [DjangoFilterBackend]
-    filterset_fields = ["name"]
+    pagination_class = None
+
+    def get(self, request, *args, **kwargs):
+        print(request.GET.get("name"))
+        queryset = (
+            self.get_queryset()
+            .prefetch_related("subgroups")
+            .filter(name=request.GET.get("name"))
+        )
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data[0])
 
     @swagger_auto_schema(
         operation_summary="Create Team",
@@ -122,12 +147,12 @@ class TeamDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = TeamSerializer
     queryset = Team.objects.all()
     allowed_methods = ["PATCH", "GET", "DELETE"]
+    lookup_field = "uuid"
 
-    def get_object(self) -> Team:
-        team = self.queryset.filter(uuid=self.kwargs.get("uuid")).first()
-        if not team:
-            raise InstanceNotFound("team with the provided uuid does not exist")
-        return team
+    def get_queryset(self):
+        return self.queryset.prefetch_related("subgroups").filter(
+            uuid=self.kwargs.get("uuid")
+        )
 
     def perform_update(self, serializer):
         serializer.save(updated_at=timezone.now())

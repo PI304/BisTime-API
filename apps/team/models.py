@@ -98,7 +98,7 @@ class SubGroup(TimeStampMixin):
 class TeamMember(TimeStampMixin):
     id = models.BigAutoField(primary_key=True)
     name = models.CharField(max_length=20, null=False, blank=False)
-    team = models.ForeignKey(Team, on_delete=models.CASCADE)
+    team = models.ForeignKey(Team, on_delete=models.CASCADE, related_name="members")
     subgroup = models.ForeignKey(SubGroup, on_delete=models.CASCADE, null=True)
 
     class Meta:

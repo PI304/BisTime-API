@@ -1,5 +1,6 @@
 from typing import Any, Union
 
+from django.db.models import Prefetch
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
@@ -97,8 +98,10 @@ class TeamMemberListView(generics.ListAPIView):
         type=openapi.TYPE_STRING,
     )
 
-    def get_team(self):
-        return self.queryset.filter(uuid=self.kwargs.get("uuid")).first()
+    def get_team_queryset(self):
+        return self.queryset.prefetch_related(
+            Prefetch("members", queryset=TeamMember.objects.select_related("subgroup"))
+        ).filter(uuid=self.kwargs.get("uuid"))
 
     @swagger_auto_schema(
         tags=["team-members"],
@@ -115,13 +118,15 @@ class TeamMemberListView(generics.ListAPIView):
     def get(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         name = request.GET.get("name")
         subgroup = request.GET.get("subgroup")
+        queryset = self.get_team_queryset()
 
-        team = self.get_team()
+        team = queryset.first()
+        if team is None:
+            raise InstanceNotFound("team with the provided uuid does not exist")
 
         if name:
-            try:
-                member = get_object_or_404(TeamMember, name=name, team_id=team.id)
-            except Http404:
+            member = team.members.filter(name=name).first()
+            if member is None:
                 raise InstanceNotFound(
                     "team member with the provided name does not exist in the team"
                 )
@@ -136,13 +141,11 @@ class TeamMemberListView(generics.ListAPIView):
             return Response(data, status=status.HTTP_200_OK)
         elif subgroup:
             # Subgroup 내 모든 스케줄
-            return Response(
-                TeamMemberService.get_subgroup_schedules(team.name, subgroup)
-            )
+            return Response(TeamMemberService.get_subgroup_schedules(team, subgroup))
         elif not subgroup and not name:
             # Team 내 모든 fixed schedule
             return Response(
-                TeamMemberService.get_all_member_schedules(team.name),
+                TeamMemberService.get_all_member_schedules(team),
                 status=status.HTTP_200_OK,
             )
 
