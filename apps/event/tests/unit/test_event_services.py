@@ -33,11 +33,13 @@ class TestEventService(object):
                 "2023-02-22": "0" * 48,
                 "2023-02-23": "1" * 48,
             }
+
             event = (
                 Event.objects.selected_related("associated_team")
                 .prefetch_related("event_date", "schedule")
                 .get(id=999)
             )
+            
             assert result == EventService.get_availability_str(event)
             assert len(expected_num_queries.captured_queries) <= 4
 
