@@ -28,7 +28,7 @@ class TestEventView(object):
 
         res = self.request("post", url, data)
         assert res.status_code == 201
-        assert res.data["count"] == 4
+        assert res.data["count"] == 5
 
     def test_event_delete(self, create_event, create_event_dates):
         url = "/api/events/dbWUg9io46UXYNsiJrPhfR"
