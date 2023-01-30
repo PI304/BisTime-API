@@ -1,6 +1,7 @@
 import pytest
 
-from apps.event.models import Event, EventDate
+from apps.event.models import Event, EventDate, Schedule
+from apps.event.serializers import ScheduleSerializer
 from apps.event.services import EventService
 
 from django.test.utils import CaptureQueriesContext
@@ -32,9 +33,11 @@ class TestEventService(object):
                 "2023-02-22": "0" * 48,
                 "2023-02-23": "1" * 48,
             }
-            event = Event.objects.prefetch_related(
-                "event_date", "schedule", "associated_team"
-            ).get(id=999)
+            event = (
+                Event.objects.selected_related("associated_team")
+                .prefetch_related("event_date", "schedule")
+                .get(id=999)
+            )
             assert result == EventService.get_availability_str(event)
             assert len(expected_num_queries.captured_queries) <= 4
 
@@ -48,6 +51,24 @@ class TestEventService(object):
                 event__uuid="dbWUg9io46UXYNsiJrPhfR"
             )
             l = list(queryset)
+            assert len(expected_num_queries.captured_queries) == 1
+
+            close_old_connections()
+
+    def test_get_related_schedule_for_event(
+        self, create_event, create_event_dates, create_schedule
+    ):
+        from django.db import connection, close_old_connections
+
+        with CaptureQueriesContext(connection) as (expected_num_queries):
+            queryset = (
+                Schedule.objects.select_related("event", "date")
+                .filter(event__uuid="dbWUg9io46UXYNsiJrPhfR")
+                .order_by("date__date")
+            )
+            serializer = ScheduleSerializer(queryset, many=True)
+            s = serializer.data
+            print(expected_num_queries.captured_queries)
             assert len(expected_num_queries.captured_queries) == 1
 
             close_old_connections()

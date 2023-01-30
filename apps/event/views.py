@@ -133,11 +133,14 @@ class EventDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Event.objects.all()
     allowed_methods = ["GET", "PATCH", "DELETE"]
     lookup_field = "uuid"
+    pagination_class = None
 
     def get_object(self):
-        return self.queryset.prefetch_related(
-            "event_date", "schedule", "associated_team"
-        ).get(uuid=self.kwargs.get("uuid"))
+        return (
+            self.queryset.select_related("associated_team")
+            .prefetch_related("event_date", "schedule")
+            .get(uuid=self.kwargs.get("uuid"))
+        )
 
     def perform_update(self, serializer):
         serializer.save(updated_at=timezone.now())
@@ -153,7 +156,7 @@ class EventDetailView(generics.RetrieveUpdateDestroyAPIView):
 class EventDateView(generics.ListCreateAPIView):
     serializer_class = EventDateSerializer
     queryset = EventDate.objects.all()
-    allowed_methods = ["POST"]
+    allowed_methods = ["POST", "GET"]
     lookup_field = "uuid"
 
     def get_queryset(self):
@@ -244,8 +247,10 @@ class ScheduleView(generics.ListCreateAPIView, generics.UpdateAPIView):
     lookup_field = "uuid"
 
     def get_queryset(self):
-        qs = self.queryset.filter(event__uuid=self.kwargs.get("uuid")).order_by(
-            "date__date"
+        qs = (
+            self.queryset.select_related("event", "date")
+            .filter(event__uuid=self.kwargs.get("uuid"))
+            .order_by("date__date")
         )
         return qs
 
