@@ -51,8 +51,8 @@ class TeamSerializer(serializers.ModelSerializer):
         return [s.name for s in subgroups]
 
     def validate(self, data: Dict) -> Dict:
-        print(data)
-        TimeBlockMixin.validate_time_data(data)
+        if "start_time" in data and "end_time" in data:
+            TimeBlockMixin.validate_time_data(data)
 
         # TODO: validate security question index number
         return data

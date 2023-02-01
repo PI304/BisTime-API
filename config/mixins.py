@@ -47,9 +47,6 @@ class TimeBlockMixin(models.Model):
 
     @staticmethod
     def validate_time_data(data: dict) -> None:
-        if not ("start_time" in data and "end_time" in data):
-            raise ValidationError("data must include both start_time and end_time")
-
         TimeBlockMixin.__time_validation(data["start_time"])
         TimeBlockMixin.__time_validation(data["end_time"])
         if (
