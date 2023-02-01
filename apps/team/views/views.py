@@ -154,8 +154,13 @@ class TeamDetailView(generics.RetrieveUpdateDestroyAPIView):
             uuid=self.kwargs.get("uuid")
         )
 
-    def perform_update(self, serializer):
-        serializer.save(updated_at=timezone.now())
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=True)
+        if serializer.is_valid(raise_exception=True):
+            serializer.save(updated_at=timezone.now())
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     def perform_destroy(self, instance):
         TeamMemberService.delete_schedule(instance.name)
