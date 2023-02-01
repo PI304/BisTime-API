@@ -4,6 +4,7 @@ from botocore.exceptions import ClientError
 from django.db.models import QuerySet
 from django.http import Http404
 from django.shortcuts import get_list_or_404, get_object_or_404
+from django.utils import timezone
 from dotenv import load_dotenv
 from io import BytesIO
 from typing import Union, List
@@ -38,6 +39,14 @@ class TeamService(object):
     @staticmethod
     def generate_team_uuid() -> str:
         return "T" + EventService.generate_uuid()
+
+    @staticmethod
+    def reset_admin_code(team: Team) -> Team:
+        team.admin_code = TeamService.generate_admin_code()
+        team.updated_at = timezone.now()
+        team.save(update_fields=["admin_code", "updated_at"])
+
+        return team
 
 
 class TeamRegularEventService(object):
