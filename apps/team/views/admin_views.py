@@ -21,6 +21,15 @@ class TeamAdminCodeVerificationView(APIView):
     @swagger_auto_schema(
         operation_summary="Check admin code",
         tags=["team-admin"],
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            required=["adminCode"],
+            properties={
+                "adminCode": openapi.Schema(
+                    type=openapi.TYPE_STRING, description="어드민 코드"
+                )
+            },
+        ),
         responses={
             204: "No content",
             404: "Team with the provided uuid does not exist",
