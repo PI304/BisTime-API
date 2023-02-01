@@ -59,12 +59,6 @@ class TeamRegularEventService(object):
         return "R" + EventService.generate_uuid()
 
 
-class SubGroupService:
-    @staticmethod
-    def delete_s3_subgroup(name: str) -> None:
-        pass
-
-
 class TeamMemberService(object):
 
     bucket_name = os.environ.get("S3_BUCKET_NAME")
