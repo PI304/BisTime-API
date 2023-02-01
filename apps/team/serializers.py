@@ -85,7 +85,7 @@ class TeamRegularEventSerializer(serializers.ModelSerializer):
         TimeBlockMixin.validate_time_data(
             data.get("start_time", None), data.get("end_time", None)
         )
-        if data["day"] < 0 or data["day"] > 6:
+        if "day" in data and (data["day"] < 0 or data["day"] > 6):
             raise ValidationError("day should be between 0 and 6")
 
         return data
