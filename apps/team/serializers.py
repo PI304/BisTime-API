@@ -51,8 +51,9 @@ class TeamSerializer(serializers.ModelSerializer):
         return [s.name for s in subgroups]
 
     def validate(self, data: Dict) -> Dict:
-        if "start_time" in data and "end_time" in data:
-            TimeBlockMixin.validate_time_data(data)
+        TimeBlockMixin.validate_time_data(
+            data.get("start_time", None), data.get("end_time", None)
+        )
 
         # TODO: validate security question index number
         return data
@@ -81,7 +82,9 @@ class TeamRegularEventSerializer(serializers.ModelSerializer):
         """
         Validate model input
         """
-        TimeBlockMixin.validate_time_data(data)
+        TimeBlockMixin.validate_time_data(
+            data.get("start_time", None), data.get("end_time", None)
+        )
         if data["day"] < 0 or data["day"] > 6:
             raise ValidationError("day should be between 0 and 6")
 
