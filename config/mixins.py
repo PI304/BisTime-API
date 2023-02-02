@@ -1,3 +1,5 @@
+from typing import Union
+
 from django.db import models
 from rest_framework.exceptions import ValidationError
 
@@ -46,14 +48,14 @@ class TimeBlockMixin(models.Model):
             raise ValidationError("minutes should be 00 or 30")
 
     @staticmethod
-    def validate_time_data(data: dict) -> None:
-        if not ("start_time" in data and "end_time" in data):
-            raise ValidationError("data must include both start_time and end_time")
+    def validate_time_data(
+        start_time: Union[str, None], end_time: Union[str, None]
+    ) -> None:
+        if start_time:
+            TimeBlockMixin.__time_validation(start_time)
+        if end_time:
+            TimeBlockMixin.__time_validation(end_time)
 
-        TimeBlockMixin.__time_validation(data["start_time"])
-        TimeBlockMixin.__time_validation(data["end_time"])
-        if (
-            int(data["end_time"].split(":")[0]) - int(data["start_time"].split(":")[0])
-            < 0
-        ):
-            raise ValidationError("end_time should be larger than start_time")
+        if start_time and end_time:
+            if int(end_time.split(":")[0]) - int(start_time.split(":")[0]) < 0:
+                raise ValidationError("end_time should be larger than start_time")

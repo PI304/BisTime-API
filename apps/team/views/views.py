@@ -2,6 +2,7 @@ from typing import Any
 
 from django.http import Http404
 from django.shortcuts import get_object_or_404
+from rest_framework.generics import get_object_or_404 as _get_object_or_404
 from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django_filters.rest_framework import DjangoFilterBackend
@@ -10,6 +11,7 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 from rest_framework.request import Request
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from apps.team.models import Team, TeamRegularEvent, SubGroup
 from apps.team.serializers import (
@@ -20,13 +22,37 @@ from apps.team.serializers import (
 from apps.team.services import TeamService, TeamRegularEventService, TeamMemberService
 from config.exceptions import InstanceNotFound
 
+team_name_param = openapi.Parameter(
+    "name", openapi.IN_QUERY, description="팀 이름", type=openapi.TYPE_STRING
+)
 
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_description="use query string 'name' to get a team by its name",
+        manual_parameters=[team_name_param],
+        responses={
+            200: openapi.Response("Success", TeamSerializer),
+            404: "Not found",
+        },
+    ),
+)
 class TeamView(generics.ListCreateAPIView):
     serializer_class = TeamSerializer
     queryset = Team.objects.all()
     allowed_methods = ["GET", "POST"]
-    filter_backends = [DjangoFilterBackend]
-    filterset_fields = ["name"]
+    pagination_class = None
+
+    def get(self, request, *args, **kwargs):
+        print(request.GET.get("name"))
+        queryset = (
+            self.get_queryset()
+            .prefetch_related("subgroups")
+            .filter(name=request.GET.get("name"))
+        )
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data[0])
 
     @swagger_auto_schema(
         operation_summary="Create Team",
@@ -122,15 +148,20 @@ class TeamDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = TeamSerializer
     queryset = Team.objects.all()
     allowed_methods = ["PATCH", "GET", "DELETE"]
+    lookup_field = "uuid"
 
-    def get_object(self) -> Team:
-        team = self.queryset.filter(uuid=self.kwargs.get("uuid")).first()
-        if not team:
-            raise InstanceNotFound("team with the provided uuid does not exist")
-        return team
+    def get_queryset(self):
+        return self.queryset.prefetch_related("subgroups").filter(
+            uuid=self.kwargs.get("uuid")
+        )
 
-    def perform_update(self, serializer):
-        serializer.save(updated_at=timezone.now())
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=True)
+        if serializer.is_valid(raise_exception=True):
+            serializer.save(updated_at=timezone.now())
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     def perform_destroy(self, instance):
         TeamMemberService.delete_schedule(instance.name)
@@ -152,18 +183,13 @@ class TeamRegularEventListView(generics.ListCreateAPIView):
     serializer_class = TeamRegularEventSerializer
     queryset = TeamRegularEvent.objects.all()
     allowed_methods = ["GET", "POST"]
+    lookup_field = "uuid"
 
     def get_queryset(self):
-        queryset = self.queryset.filter(team__uuid=self.kwargs.get("uuid"))
+        queryset = self.queryset.select_related("team").filter(
+            team__uuid=self.kwargs.get("uuid")
+        )
         return queryset
-
-    def get_object(self) -> Team:
-        # Get Team instance
-        try:
-            instance = get_object_or_404(Team, uuid=self.kwargs.get("uuid"))
-        except Http404:
-            raise InstanceNotFound("Team with the provided uuid doesn't exist")
-        return instance
 
     @swagger_auto_schema(
         tags=["team-regular-events"],
@@ -197,8 +223,8 @@ class TeamRegularEventListView(generics.ListCreateAPIView):
     )
     def post(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         data: dict = request.data
-        associated_team: Team = self.get_object()
-        serializer = self.get_serializer(data=data)
+        associated_team: Team = get_object_or_404(Team, uuid=kwargs.get("uuid"))
+        serializer = self.get_serializer(data=data, context={"team": associated_team})
         if serializer.is_valid(raise_exception=True):
             serializer.save(
                 uuid=TeamRegularEventService.generate_r_event_uuid(),

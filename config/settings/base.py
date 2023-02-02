@@ -114,7 +114,7 @@ WSGI_APPLICATION = "config.wsgi.debug.application"
 
 # Django REST Framework configurations
 REST_FRAMEWORK = {
-    # "EXCEPTION_HANDLER": "config.exceptions.custom_exception_handler",
+    "EXCEPTION_HANDLER": "config.exceptions.custom_exception_handler",
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.AllowAny",
     ],
