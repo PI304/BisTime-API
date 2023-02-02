@@ -12,11 +12,10 @@ class TestTeamQueries:
     Tests for assuming number of queries for a certain logic
     """
 
-    @pytest.mark.django_db
-    def test_retrieve_team_queries(self, create_team, create_subgroups):
-        from django.db import connection, close_old_connections
-
-        with CaptureQueriesContext(connection) as (expected_num_query):
+    def test_retrieve_team_queries(
+        self, create_team, create_subgroups, django_assert_num_queries
+    ):
+        with django_assert_num_queries(2) as captured:
             queryset = Team.objects.prefetch_related("subgroups").filter(
                 uuid="TCBSqtMWXVC22sGebhSW5QL"
             )
@@ -24,11 +23,6 @@ class TestTeamQueries:
             serializer = TeamSerializer(instance)
             data = serializer.data
 
-            assert len(expected_num_query.captured_queries) == 2
-
-            close_old_connections()
-
-    @pytest.mark.djang_db
     def test_updating_team_queries(self, create_team, create_subgroups):
         from django.db import connection, close_old_connections
 
@@ -48,4 +42,3 @@ class TestTeamQueries:
 
             # queryset 에서 2개, unique name check, update 문
             assert len(expected_num_query.captured_queries) == 4
-            close_old_connections()
