@@ -1,8 +1,10 @@
 import os
 
 from botocore.exceptions import ClientError
+from django.db.models import QuerySet
 from django.http import Http404
 from django.shortcuts import get_list_or_404, get_object_or_404
+from django.utils import timezone
 from dotenv import load_dotenv
 from io import BytesIO
 from typing import Union, List
@@ -38,6 +40,14 @@ class TeamService(object):
     def generate_team_uuid() -> str:
         return "T" + EventService.generate_uuid()
 
+    @staticmethod
+    def reset_admin_code(team: Team) -> Team:
+        team.admin_code = TeamService.generate_admin_code()
+        team.updated_at = timezone.now()
+        team.save(update_fields=["admin_code", "updated_at"])
+
+        return team
+
 
 class TeamRegularEventService(object):
     def __init__(self, request: Request, r_event: Union[TeamRegularEvent, None] = None):
@@ -47,12 +57,6 @@ class TeamRegularEventService(object):
     @staticmethod
     def generate_r_event_uuid() -> str:
         return "R" + EventService.generate_uuid()
-
-
-class SubGroupService:
-    @staticmethod
-    def delete_s3_subgroup(name: str) -> None:
-        pass
 
 
 class TeamMemberService(object):
@@ -139,25 +143,25 @@ class TeamMemberService(object):
         return schedules
 
     @staticmethod
-    def get_all_member_schedules(team_name: str):
-        members = get_list_or_404(TeamMember, team__name=team_name)
-        return TeamMemberService.__get_schedules(team_name, members)
+    def get_all_member_schedules(team: Team):
+        members: QuerySet = team.members.all()
+        return TeamMemberService.__get_schedules(team.name, members)
 
     @staticmethod
-    def get_subgroup_schedules(team_name: str, subgroup: str):
+    def get_subgroup_schedules(team: Team, subgroup: str):
+        members: QuerySet = team.members.all()
+        subgroup_members: List[TeamMember] = []
 
-        try:
-            subgroup_instance = get_object_or_404(SubGroup, name=subgroup)
-        except Http404:
+        for m in members:
+            if m.subgroup.name == subgroup:
+                subgroup_members.append(m)
+
+        if members is None:
             raise InstanceNotFound(
                 "subgroup with the provided name does not exist in the team"
             )
 
-        members = get_list_or_404(
-            TeamMember, subgroup__name=subgroup_instance.name, team__name=team_name
-        )
-
-        return TeamMemberService.__get_schedules(team_name, members)
+        return TeamMemberService.__get_schedules(team.name, members)
 
     @staticmethod
     def __delete_all_object_versions(object_key: str, s3_bucket=None):

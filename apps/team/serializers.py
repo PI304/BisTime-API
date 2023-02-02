@@ -9,7 +9,7 @@ from rest_framework.exceptions import ValidationError
 from apps.event.serializers import EventSerializer
 from apps.team.models import Team, TeamRegularEvent, SubGroup, TeamMember
 from apps.team.services import TeamMemberService
-from config.custom_fields import TeamUUIDField, TeamSubgroupField
+from config.custom_fields import TeamSubgroupField
 from config.exceptions import InstanceNotFound, DuplicateInstance
 from config.mixins import TimeBlockMixin
 
@@ -47,26 +47,20 @@ class TeamSerializer(serializers.ModelSerializer):
         ]
 
     def get_subgroups(self, obj) -> list[str]:
-        subgroups: list[str] = []
-        try:
-            subgroup_instances: list[SubGroup] = get_list_or_404(
-                SubGroup, team_id=obj.id
-            )
-        except Http404:
-            return subgroups
-
-        return [s.name for s in subgroup_instances]
+        subgroups = obj.subgroups.all()
+        return [s.name for s in subgroups]
 
     def validate(self, data: Dict) -> Dict:
-        print(data)
-        TimeBlockMixin.validate_time_data(data)
+        TimeBlockMixin.validate_time_data(
+            data.get("start_time", None), data.get("end_time", None)
+        )
 
         # TODO: validate security question index number
         return data
 
 
 class TeamRegularEventSerializer(serializers.ModelSerializer):
-    team = TeamSerializer(read_only=True)
+    # team = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = TeamRegularEvent
@@ -82,14 +76,19 @@ class TeamRegularEventSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
-        read_only_fields = ["id", "uuid", "created_at", "updated_at"]
+        read_only_fields = ["id", "uuid", "team", "created_at", "updated_at"]
+
+    # def get_team(self):
+    #     return self.context["team"].uuid
 
     def validate(self, data: dict) -> dict:
         """
         Validate model input
         """
-        TimeBlockMixin.validate_time_data(data)
-        if data["day"] < 0 or data["day"] > 6:
+        TimeBlockMixin.validate_time_data(
+            data.get("start_time", None), data.get("end_time", None)
+        )
+        if "day" in data and (data["day"] < 0 or data["day"] > 6):
             raise ValidationError("day should be between 0 and 6")
 
         return data
@@ -105,13 +104,16 @@ class SubgroupSerializer(serializers.ModelSerializer):
 
 
 class TeamMemberSerializer(serializers.ModelSerializer):
-    team = TeamUUIDField()
+    team = serializers.SerializerMethodField(read_only=True)
     subgroup = TeamSubgroupField()
 
     class Meta:
         model = TeamMember
         fields = ["id", "name", "team", "subgroup", "created_at", "updated_at"]
         read_only_fields = ["id", "subgroup", "team", "created_at", "updated_at"]
+
+    def get_team(self, obj):
+        return obj.name
 
     def create(self, validated_data):
         try:
@@ -133,10 +135,13 @@ class TeamMemberSerializer(serializers.ModelSerializer):
 
 
 class WeekScheduleSerializer(serializers.Serializer):
-    team = TeamUUIDField()
+    team = serializers.SerializerMethodField(read_only=True)
     subgroup = TeamSubgroupField()
     name = serializers.CharField(max_length=20)
     week_schedule = serializers.ListField(min_length=7, max_length=7)
+
+    def get_team(self, obj):
+        return obj.name
 
     def validate_week_schedule(self, value):
         for s in value:

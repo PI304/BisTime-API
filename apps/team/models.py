@@ -58,7 +58,9 @@ class TeamRegularEvent(TimeStampMixin, TimeBlockMixin):
     uuid = models.CharField(max_length=23, null=False)
     title = models.CharField(max_length=100, null=False, blank=False)
     description = models.CharField(max_length=200, null=False, blank=True)
-    team = models.ForeignKey(Team, on_delete=models.CASCADE, related_name="team_event")
+    team = models.ForeignKey(
+        Team, on_delete=models.CASCADE, related_name="team_regular_event"
+    )
     day = models.IntegerField(choices=DayOfWeek.choices, null=False)
 
     def get_day_of_week(self, day_of_week: str) -> DayOfWeek:
@@ -80,7 +82,9 @@ class SubGroup(TimeStampMixin):
     """
 
     id = models.BigAutoField(primary_key=True)
-    team = models.ForeignKey(Team, on_delete=models.CASCADE, null=False)
+    team = models.ForeignKey(
+        Team, on_delete=models.CASCADE, null=False, related_name="subgroups"
+    )
     name = models.CharField(max_length=50, null=False)
 
     class Meta:
@@ -96,7 +100,7 @@ class SubGroup(TimeStampMixin):
 class TeamMember(TimeStampMixin):
     id = models.BigAutoField(primary_key=True)
     name = models.CharField(max_length=20, null=False, blank=False)
-    team = models.ForeignKey(Team, on_delete=models.CASCADE)
+    team = models.ForeignKey(Team, on_delete=models.CASCADE, related_name="members")
     subgroup = models.ForeignKey(SubGroup, on_delete=models.CASCADE, null=True)
 
     class Meta:

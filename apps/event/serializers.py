@@ -50,7 +50,9 @@ class EventSerializer(serializers.ModelSerializer):
         """
         Validate model input
         """
-        TimeBlockMixin.validate_time_data(data)
+        TimeBlockMixin.validate_time_data(
+            data.get("start_time", None), data.get("end_time", None)
+        )
 
         return data
 
