@@ -2,6 +2,7 @@ from typing import Any
 
 from django.http import Http404
 from django.shortcuts import get_object_or_404
+from rest_framework.generics import get_object_or_404 as _get_object_or_404
 from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django_filters.rest_framework import DjangoFilterBackend
@@ -182,18 +183,13 @@ class TeamRegularEventListView(generics.ListCreateAPIView):
     serializer_class = TeamRegularEventSerializer
     queryset = TeamRegularEvent.objects.all()
     allowed_methods = ["GET", "POST"]
+    lookup_field = "uuid"
 
     def get_queryset(self):
-        queryset = self.queryset.filter(team__uuid=self.kwargs.get("uuid"))
+        queryset = self.queryset.select_related("team").filter(
+            team__uuid=self.kwargs.get("uuid")
+        )
         return queryset
-
-    def get_object(self) -> Team:
-        # Get Team instance
-        try:
-            instance = get_object_or_404(Team, uuid=self.kwargs.get("uuid"))
-        except Http404:
-            raise InstanceNotFound("Team with the provided uuid doesn't exist")
-        return instance
 
     @swagger_auto_schema(
         tags=["team-regular-events"],
@@ -227,8 +223,8 @@ class TeamRegularEventListView(generics.ListCreateAPIView):
     )
     def post(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         data: dict = request.data
-        associated_team: Team = self.get_object()
-        serializer = self.get_serializer(data=data)
+        associated_team: Team = get_object_or_404(Team, uuid=kwargs.get("uuid"))
+        serializer = self.get_serializer(data=data, context={"team": associated_team})
         if serializer.is_valid(raise_exception=True):
             serializer.save(
                 uuid=TeamRegularEventService.generate_r_event_uuid(),

@@ -60,7 +60,7 @@ class TeamSerializer(serializers.ModelSerializer):
 
 
 class TeamRegularEventSerializer(serializers.ModelSerializer):
-    team = TeamSerializer(read_only=True)
+    # team = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = TeamRegularEvent
@@ -76,7 +76,10 @@ class TeamRegularEventSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
-        read_only_fields = ["id", "uuid", "created_at", "updated_at"]
+        read_only_fields = ["id", "uuid", "team", "created_at", "updated_at"]
+
+    # def get_team(self):
+    #     return self.context["team"].uuid
 
     def validate(self, data: dict) -> dict:
         """
