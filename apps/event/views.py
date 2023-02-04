@@ -66,17 +66,23 @@ class EventView(generics.ListCreateAPIView):
         ),
     )
     def post(self, request: Request, *args: Any, **kwargs: Any) -> Response:
-        try:
-            team = get_object_or_404(Team, uuid=request.data.get("associated_team"))
-        except Http404:
-            raise InstanceNotFound("team with the provided uuid does not exist")
+        if "associated_team" in request.data:
+            try:
+                team = get_object_or_404(Team, uuid=request.data.get("associated_team"))
+            except Http404:
+                raise InstanceNotFound("team with the provided uuid does not exist")
 
-        serializer = self.get_serializer(data=request.data)
+            serializer = self.get_serializer(data=request.data)
 
-        if serializer.is_valid(raise_exception=True):
-            serializer.save(
-                uuid=EventService.generate_uuid(), associated_team_id=team.id
-            )
+            if serializer.is_valid(raise_exception=True):
+                serializer.save(
+                    uuid=EventService.generate_uuid(), associated_team_id=team.id
+                )
+        else:
+            serializer = self.get_serializer(data=request.data)
+
+            if serializer.is_valid(raise_exception=True):
+                serializer.save(uuid=EventService.generate_uuid())
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 

@@ -10,7 +10,7 @@ from typing import Dict, Union
 
 
 class EventSerializer(serializers.ModelSerializer):
-    associated_team = serializers.SerializerMethodField(read_only=True)
+    associated_team = serializers.SerializerMethodField()
     availability = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
