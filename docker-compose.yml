@@ -38,6 +38,8 @@ services:
       restart: always
       volumes:
         - ./certs:/etc/nginx/certs
+      depends_on:
+        - api
 
 volumes:
   bistime-mysql:
