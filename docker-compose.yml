@@ -1,0 +1,44 @@
+version: '3.8'
+services:
+    db:
+      image: mysql:latest
+      container_name: bistime-db
+      ports:
+        - "3306:3306"
+      command:
+        - --character-set-server=utf8mb4
+        - --collation-server=utf8mb4_unicode_ci
+      volumes:
+        - bistime-mysql:/var/lib/mysql
+        - ./infra/mysql/initdb.d:/docker-entrypoint-initdb.d
+      env_file:
+        - .env
+      environment:
+        MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+        TZ: Asia/Seoul
+    api:
+      build: .
+      container_name: bistime-api
+      command:
+        - python3 manage.py migrate
+        - gunicorn kuku.wsgi:application --bind 0.0.0.0:8080
+      ports:
+        - "8080:8080"
+      depends_on:
+        - db
+      restart: always
+      env_file:
+        - .env
+      environment:
+        DJANGO_SETTINGS_MODULE: config.settings.deploy
+
+    server:
+      build: ./infra/nginx
+      container_name: convey-nginx
+      ports:
+        - "80:80"
+        - "443:443"
+      restart: always
+
+volumes:
+  bistime-mysql:

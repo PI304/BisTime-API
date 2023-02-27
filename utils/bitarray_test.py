@@ -19,5 +19,3 @@ print(zero)
 # print(getsizeof(zero))
 # print(getsizeof(ones))
 # print(getsizeof(bytearray(48)))
-
-

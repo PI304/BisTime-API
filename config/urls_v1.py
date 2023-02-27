@@ -15,9 +15,7 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include, re_path
-from django.utils.decorators import method_decorator
 from drf_yasg import openapi
-from drf_yasg.utils import swagger_auto_schema
 from drf_yasg.views import get_schema_view
 from rest_framework import permissions
 from rest_framework.request import Request
@@ -52,7 +50,6 @@ urlpatterns = [
     path("/events", include("apps.event.urls")),
     path("/teams", include("apps.team.urls")),
     path("/api-auth", include("rest_framework.urls")),
-    path("/silk/", include("silk.urls", namespace="silk")),
 ]
 
 urlpatterns += [
