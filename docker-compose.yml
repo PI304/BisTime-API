@@ -19,9 +19,6 @@ services:
     api:
       build: .
       container_name: bistime-api
-      command:
-        - python3 manage.py migrate
-        - gunicorn kuku.wsgi:application --bind 0.0.0.0:8080
       ports:
         - "8080:8080"
       depends_on:
@@ -34,11 +31,13 @@ services:
 
     server:
       build: ./infra/nginx
-      container_name: convey-nginx
+      container_name: bistime-nginx
       ports:
         - "80:80"
         - "443:443"
       restart: always
+      volumes:
+        - ./certs:/etc/nginx/certs
 
 volumes:
   bistime-mysql:
