@@ -61,4 +61,9 @@ def create_bitmap_bytes(bytes_array: List[List[int]]) -> bytes:
     print(bitmap.tobytes())
     return bitmap.tobitmap()
 
-print(create_bitmap_bytes([[0] * 48, [0] * 48, [0] * 48, [0] * 48, [0] * 48, [0] * 48, [0] * 48]))
+
+print(
+    create_bitmap_bytes(
+        [[0] * 48, [0] * 48, [0] * 48, [0] * 48, [0] * 48, [0] * 48, [0] * 48]
+    )
+)

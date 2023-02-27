@@ -8,4 +8,5 @@ def generate_random_timeblock():
 
     return s
 
+
 print(generate_random_timeblock())

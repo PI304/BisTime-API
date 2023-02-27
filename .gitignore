@@ -4,4 +4,4 @@
 .DS_Store
 .mypy_cache
 __pycache__
-/infra
+.pytest_cache
