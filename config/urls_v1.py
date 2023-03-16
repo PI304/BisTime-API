@@ -46,10 +46,10 @@ def hello_world(request: Request) -> Response:
 
 urlpatterns = [
     path("", hello_world),
-    path("/admin", admin.site.urls),
-    path("/events", include("apps.event.urls")),
-    path("/teams", include("apps.team.urls")),
-    path("/api-auth", include("rest_framework.urls")),
+    path("admin", admin.site.urls),
+    path("events", include("apps.event.urls")),
+    path("teams", include("apps.team.urls")),
+    path("api-auth", include("rest_framework.urls")),
 ]
 
 urlpatterns += [
