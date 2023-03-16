@@ -41,7 +41,7 @@ SchemaView = get_schema_view(
 
 @api_view(["GET"])
 def hello_world(request: Request) -> Response:
-    return Response("Go to '/api/swagger' or '/api/redoc' for api documentation")
+    return Response("Go to '/swagger' or '/redoc' for api documentation")
 
 
 urlpatterns = [

@@ -11,7 +11,6 @@ class RequestMiddleware:
         self.VALID_URLS = ["api", "swagger", "redoc"]
 
     def __call__(self, request):
-
         try:
             self.process_request(request)
         except ValidationError as e:
@@ -29,13 +28,10 @@ class RequestMiddleware:
         return response
 
     def process_request(self, request):
-        if "api" not in request.path:
-            raise ValidationError("all urls must include '/api'")
-        else:
-            if request.path.split("/")[2] not in ["swagger", "redoc", "admin", "silk"]:
-                if len(request.headers["Accept"].split(";")) < 2:
-                    raise ValidationError(
-                        "Accept header must be 'application/json; version=1;'"
-                    )
-                if "version" not in request.headers["Accept"].split(";")[1]:
-                    raise ValidationError("Accept header must include api version")
+        if request.path.split("/")[2] not in ["swagger", "redoc", "admin", "silk"]:
+            if len(request.headers["Accept"].split(";")) < 2:
+                raise ValidationError(
+                    "Accept header must be 'application/json; version=1;'"
+                )
+            if "version" not in request.headers["Accept"].split(";")[1]:
+                raise ValidationError("Accept header must include api version")

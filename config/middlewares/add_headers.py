@@ -5,5 +5,5 @@ class AddHeaders:
     def __call__(self, request):
         response = self.get_response(request)
         response["Host"] = "localhost"
-        response["Link"] = 'https://bistime.app/api/swagger/; rel="profile"'
+        response["Link"] = 'https://api.bistime.app/swagger/; rel="profile"'
         return response
