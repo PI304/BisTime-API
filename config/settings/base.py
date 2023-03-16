@@ -35,7 +35,7 @@ SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["www.bistime.app", "bistime.app", "13.125.196.243"]
+ALLOWED_HOSTS = ["13.125.196.243", "api.bistime.app"]
 
 
 # Application definition
