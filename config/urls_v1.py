@@ -59,12 +59,12 @@ urlpatterns += [
         name="schema-json",
     ),
     re_path(
-        r"^/swagger/$",
+        r"^/swagger$",
         SchemaView.with_ui("swagger", cache_timeout=0),
         name="schema-swagger-ui",
     ),
     re_path(
-        r"^/redoc/$",
+        r"^/redoc$",
         SchemaView.with_ui("redoc", cache_timeout=0),
         name="schema-redoc-ui",
     ),
