@@ -23,8 +23,8 @@ def health_check_view(request):
 
 
 urlpatterns = [
-    path("", include("config.urls_v1")),
     path("health-check", health_check_view, name="health-check"),
+    re_path(r"^api/", include("config.urls_v1")),
 ]
 
 if settings.DEBUG:
