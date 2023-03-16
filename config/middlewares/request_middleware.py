@@ -28,6 +28,8 @@ class RequestMiddleware:
         return response
 
     def process_request(self, request):
-        if request.path.split("/")[1] not in ["swagger", "redoc", "admin", "silk"]:
-            if "version" not in request.headers["Accept"].split(";")[1]:
-                raise ValidationError("Accept header must include api version")
+        if request.path.split("/")[2] not in ["swagger", "redoc", "admin", "silk"]:
+            if len(request.headers["Accept"].split(";")) < 2:
+                raise ValidationError(
+                    "Accept header must be 'application/json; version=1;'"
+                )
