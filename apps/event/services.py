@@ -59,7 +59,6 @@ class EventService:
         for key, value in groupby(schedules, key=itemgetter("date_id")):
             grouped_schedules[key] = list(value)
 
-        print(grouped_schedules)
         availability_obj = {}
 
         for date in associated_dates:
@@ -81,7 +80,6 @@ class EventService:
 
     @staticmethod
     def get_availability_str(event: Event) -> Dict[str, Union[str, List[int]]]:
-
         availability_obj: Optional[
             Dict[str, Union[str, List[int]]]
         ] = EventService.__calculate_event_availability(event)
@@ -89,7 +87,7 @@ class EventService:
         if availability_obj is None:
             return None
         else:
-            for (k, v) in availability_obj.items():
+            for k, v in availability_obj.items():
                 availability_obj[k] = "".join(str(e) for e in v)
 
             return availability_obj
