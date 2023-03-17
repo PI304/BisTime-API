@@ -41,7 +41,6 @@ services:
         - ./certbot/conf:/etc/nginx/ssl
       depends_on:
         - api
-        - certbot
 
     certbot:
       image: certbot/certbot:latest
