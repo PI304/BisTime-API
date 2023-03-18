@@ -40,7 +40,7 @@ ALLOWED_HOSTS = ["13.125.196.243", "api.bistime.app", "bistime.app", "0.0.0.0"]
 
 # Application definition
 
-BISTIME_APPS = ["apps.event", "apps.team"]
+BISTIME_APPS = ["apps.event", "apps.team", "apps.feedback"]
 
 THIRD_PARTY_APPS = [
     "rest_framework",

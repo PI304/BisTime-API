@@ -49,6 +49,7 @@ urlpatterns = [
     path("admin", admin.site.urls),
     path("events", include("apps.event.urls")),
     path("teams", include("apps.team.urls")),
+    path("feedbacks", include("apps.feedback.urls")),
     path("api-auth", include("rest_framework.urls")),
 ]
 
