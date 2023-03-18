@@ -37,7 +37,8 @@ services:
         - "443:443"
       restart: always
       volumes:
-        - ./certbot/conf:/etc/nginx/certs
+        - ./certbot/conf:/etc/nginx/ssl
+        - ./certbot/data:/var/www/letsencrypt
       depends_on:
         - api
 
