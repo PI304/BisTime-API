@@ -79,7 +79,7 @@ MIDDLEWARE = [
 # CORS
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
-    "https://bis-time-frontend-git-dev-pi-dev.vercel.app",
+    "https://bistime.app",
 ]
 
 
