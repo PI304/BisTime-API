@@ -1,6 +1,7 @@
 from rest_framework import status
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
+from django.conf import settings
 
 from config.renderer import CustomRenderer
 
@@ -28,8 +29,23 @@ class RequestMiddleware:
         return response
 
     def process_request(self, request):
-        if request.path.split("/")[2] not in ["swagger", "redoc", "admin", "silk"]:
-            if len(request.headers["Accept"].split(";")) < 2:
-                raise ValidationError(
-                    "Accept header must be 'application/json; version=1;'"
-                )
+        if not settings.DEBUG:
+            # deployment environment
+            if "api" not in request.path:
+                raise ValidationError("all paths should start with '/api'")
+            else:
+                if len(request.headers["Accept"].split(";")) < 2:
+                    raise ValidationError(
+                        "Accept header must be 'application/json; version=1;'"
+                    )
+        else:
+            if "api" in request.path and request.path.split("/")[2] not in [
+                "swagger",
+                "redoc",
+                "admin",
+                "silk",
+            ]:
+                if len(request.headers["Accept"].split(";")) < 2:
+                    raise ValidationError(
+                        "Accept header must be 'application/json; version=1;'"
+                    )
