@@ -39,12 +39,7 @@ class RequestMiddleware:
                         "Accept header must be 'application/json; version=1;'"
                     )
         else:
-            if "api" in request.path and request.path.split("/")[2] not in [
-                "swagger",
-                "redoc",
-                "admin",
-                "silk",
-            ]:
+            if "api" in request.path and "swagger" not in request.path:
                 if len(request.headers["Accept"].split(";")) < 2:
                     raise ValidationError(
                         "Accept header must be 'application/json; version=1;'"
