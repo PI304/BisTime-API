@@ -2,7 +2,7 @@ from django.core.exceptions import BadRequest
 from rest_framework.views import exception_handler
 from rest_framework import exceptions
 from django.http import Http404
-from rest_framework.exceptions import APIException
+from rest_framework.exceptions import APIException, ValidationError
 
 
 class InstanceNotFound(APIException):
@@ -53,6 +53,42 @@ class InternalServerError(APIException):
             self.detail = detail
 
 
+class InvalidInputException(APIException):
+    status_code = 400
+    default_detail = "invalid input"
+    default_code = "bad_request"
+
+    def __init__(self, detail=None):
+        if detail is None:
+            self.detail = self.default_detail
+        else:
+            self.detail = detail
+
+
+class UnprocessableException(APIException):
+    status_code = 422
+    default_detail = "unprocessable"
+    default_code = "unprocessable_entity"
+
+    def __init__(self, detail=None):
+        if detail is None:
+            self.detail = self.default_detail
+        else:
+            self.detail = detail
+
+
+class ConflictException(APIException):
+    status_code = 409
+    default_detail = "conflict"
+    default_code = "conflict"
+
+    def __init__(self, detail=None):
+        if detail is None:
+            self.detail = self.default_detail
+        else:
+            self.detail = detail
+
+
 def custom_exception_handler(exc, context):
     # Call REST framework's default exception handler first,
     # to get the standard error response.
@@ -79,6 +115,18 @@ def custom_exception_handler(exc, context):
         elif isinstance(exc, InstanceNotFound):
             customized_response = {"code": response.status_code, "detail": exc.detail}
         elif isinstance(exc, DuplicateInstance):
+            customized_response = {"code": response.status_code, "detail": exc.detail}
+        elif isinstance(exc, ValidationError):
+            customized_response = {"code": response.status_code, "detail": exc.detail}
+        elif isinstance(exc, InvalidInputException):
+            customized_response = {"code": response.status_code, "detail": exc.detail}
+        elif isinstance(exc, UnprocessableException):
+            customized_response = {"code": response.status_code, "detail": exc.detail}
+        elif isinstance(exc, ConflictException):
+            customized_response = {"code": response.status_code, "detail": exc.detail}
+        elif isinstance(exc, InternalServerError):
+            customized_response = {"code": response.status_code, "detail": exc.detail}
+        elif isinstance(exc, S3ImagesUploadFailed):
             customized_response = {"code": response.status_code, "detail": exc.detail}
         else:
             customized_response = {

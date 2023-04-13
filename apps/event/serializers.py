@@ -77,7 +77,6 @@ class EventDateSerializer(serializers.ModelSerializer):
         """
         Check if date is of future value
         """
-        print(type(value))
         if value <= datetime.date.today():
             raise ValidationError("should be a future date")
 

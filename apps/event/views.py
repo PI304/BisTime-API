@@ -24,7 +24,7 @@ from apps.event.serializers import (
 )
 from apps.event.services import EventService, EventDateService
 from apps.team.models import Team
-from config.exceptions import InstanceNotFound
+from config.exceptions import InstanceNotFound, InvalidInputException
 
 name_param = openapi.Parameter(
     "name", openapi.IN_QUERY, description="팀원 이름", type=openapi.TYPE_STRING
@@ -201,6 +201,12 @@ class EventDateView(generics.ListCreateAPIView):
         associated_dates: List[EventDate] = []
 
         for d in additional_dates:
+            year, month, day = d.split("-")
+            try:
+                datetime(int(year), int(month), int(day))
+            except ValueError:
+                raise InvalidInputException(f"invalid date format: {d}")
+
             try:
                 existing_date = get_object_or_404(
                     EventDate, event_id=associated_event.id, date=d
@@ -247,6 +253,7 @@ class EventDateDestroyView(generics.DestroyAPIView):
 class ScheduleView(generics.ListCreateAPIView, generics.UpdateAPIView):
     serializer_class = ScheduleSerializer
     queryset = Schedule.objects.all()
+    pagination_class = None
     allowed_methods = ["GET", "POST", "PATCH"]
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ["name"]
